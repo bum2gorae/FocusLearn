@@ -102,4 +102,6 @@ dependencies {
     implementation(libs.androidx.camera2)
     implementation(libs.androidx.camera.lifecycle.v110)
     implementation(libs.androidx.camera.view.v100alpha31)
+    implementation (libs.kotlinx.coroutines.core.v152)
+    implementation (libs.kotlinx.coroutines.android.v152)
 }

@@ -5,6 +5,8 @@ coreKtx = "1.13.1"
 junit = "4.13.2"
 junitVersion = "1.2.1"
 espressoCore = "3.6.1"
+kotlinxCoroutinesCore = "1.7.1"
+kotlinxCoroutinesAndroid = "1.7.3"
 lifecycleRuntimeKtx = "2.8.3"
 activityCompose = "1.9.0"
 composeBom = "2024.06.00"
@@ -35,6 +37,8 @@ androidx-ui-test-junit4 = { group = "androidx.compose.ui", name = "ui-test-junit
 androidx-material3 = { group = "androidx.compose.material3", name = "material3" }
 androidx-camera-core = { group = "androidx.camera", name = "camera-core" , version.ref = "camera-core" }
 androidx-camera2 = { group = "androidx.camera", name = "camera-camera2" , version.ref = "camera2" }
+kotlinx-coroutines-android-v152 = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-android", version.ref = "kotlinxCoroutinesAndroid" }
+kotlinx-coroutines-core-v152 = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "kotlinxCoroutinesCore" }
 opencv-android = { group = "org.opencv", name = "opencv-android" , version.ref = "opencv-android" }
 chaquo-python = { group = "com.chaquo.python", name = "chaquopy" , version.ref = "chaquo" }
 androidx-runtime-livedata = { group = "androidx.compose.runtime", name = "runtime-livedata", version.ref = "runtimeLivedata" }
@@ -43,4 +47,3 @@ androidx-runtime-livedata = { group = "androidx.compose.runtime", name = "runtim
 android-application = { id = "com.android.application", version.ref = "agp" }
 jetbrains-kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
 chaquo-python = { id = "com.chaquo.python", version.ref = "chaquo" }
-
