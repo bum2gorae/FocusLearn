@@ -230,10 +230,10 @@ class MainActivity : ComponentActivity() {
     private suspend fun processImageProxy(imageProxy: ImageProxy, hasPermission: Boolean) {
         Log.d("ImageAnalysis", "Processing image")
         try {
-//            val bgrBytes = imageToNV21ByteArray(imageProxy)
-            val nv21Bytes = withContext(Dispatchers.IO) {
-                imageToBGRByteArray(imageProxy)
-            }
+            val bgrBytes = imageToIntArray(imageProxy)
+//            val nv21Bytes = withContext(Dispatchers.IO) {
+//                imageToBGRByteArray(imageProxy)
+//            }
 
             if (!Python.isStarted()) {
                 Log.d("Python", "Starting Python interpreter")
@@ -250,8 +250,8 @@ class MainActivity : ComponentActivity() {
                 Log.d("Python", "Calling predict_img with hasPermission: $hasPermission")
                 val resultJson: String = withContext(Dispatchers.IO) {
                     pyModule.callAttr(
-                        "predict_img", nv21Bytes, imageProxy.width, imageProxy.height
-//                    "predict_img", bgrBytes
+//                        "predict_img", nv21Bytes, imageProxy.width, imageProxy.height
+                    "predict_img", bgrBytes
                     ).toJava(String::class.java)
                 }
                 Log.d("Python", "predict_img called successfully")

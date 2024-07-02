@@ -13,10 +13,11 @@ model_path = os.path.join(current_dir, 'best.pt')
 # YOLO 모델 로드
 model = YOLO(model_path)
 
-def predict_img(frame, width, height):
+def predict_img(frame):
     try:
         # 파이썬 리스트를 NumPy 배열로 변환
-        np_img = np.frombuffer(frame, dtype=np.uint8).reshape((height, width, 3))
+        # np_img = np.frombuffer(frame, dtype=np.uint8).reshape((height, width, 3))
+        np_img = np.array(frame, dtype=np.uint8)
 
         # YOLO 모델 예측
         results = model.predict(np_img)
