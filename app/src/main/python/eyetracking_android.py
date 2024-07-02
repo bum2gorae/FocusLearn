@@ -2,7 +2,7 @@ import cv2
 from ultralytics import YOLO
 import os
 import numpy as np
-
+import json
 
 
 def predict_img(frame, camera_on):
@@ -46,8 +46,9 @@ def predict_img(frame, camera_on):
                     cv2.rectangle(img_np, (x1, y1), (x2, y2), (0, 0, 255), 1)
                     cv2.putText(img_np, f'class:{class_name}, conf:{confidence}', (x1, y1-20), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255), 1)
         
-        _, buffer = cv2.imencode('.jpg', img_np)
-        return buffer.tobytes()
+        cv2.putText(img_np, 'test', (20, 20), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255), 1)
+        result_json = json.dumps(img_np.tolist())
+        return result_json
     
     except Exception as e:
         print(f"Error in predict_img: {e}")

@@ -40,6 +40,7 @@ import androidx.lifecycle.ViewModel
 import com.chaquo.python.Python
 import com.chaquo.python.android.AndroidPlatform
 import com.example.focuslearn.ui.theme.FocusLearnTheme
+import org.json.JSONArray
 import org.opencv.core.Core
 import org.opencv.core.CvType
 import org.opencv.core.Mat
@@ -110,11 +111,51 @@ private fun imageToIntArray(imageProxy: ImageProxy): Array<Array<IntArray>> {
     return bgrArray
 }
 
+private fun jsonToIntArray(json: String): Array<Array<IntArray>> {
+    val jsonArray = JSONArray(json)
+    val height = jsonArray.length()
+    val width = jsonArray.getJSONArray(0).length()
+    val channels = jsonArray.getJSONArray(0).getJSONArray(0).length()
+
+    val intArray = Array(height) { Array(width) { IntArray(channels) } }
+
+    for (i in 0 until height) {
+        for (j in 0 until width) {
+            for (k in 0 until channels) {
+                intArray[i][j][k] = jsonArray.getJSONArray(i).getJSONArray(j).getInt(k)
+            }
+        }
+    }
+
+    return intArray
+}
+
+// 3차원 IntArray를 Bitmap으로 변환
+private fun intArrayToBitmap(array: Array<Array<IntArray>>): Bitmap {
+    val height = array.size
+    val width = array[0].size
+    val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
+
+    for (i in 0 until height) {
+        for (j in 0 until width) {
+            val b = array[i][j][0]
+            val g = array[i][j][1]
+            val r = array[i][j][2]
+            val color = (0xFF shl 24) or (r shl 16) or (g shl 8) or b
+            bitmap.setPixel(j, i, color)
+        }
+    }
+
+    return bitmap
+}
+
 class MainActivity : ComponentActivity() {
     private val viewModel: MainViewModel by viewModels()
+
     init {
         System.loadLibrary("opencv_java4")
     }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
@@ -191,29 +232,41 @@ class MainActivity : ComponentActivity() {
 
     private fun processImageProxy(imageProxy: ImageProxy, hasPermission: Boolean) {
         Log.d("ImageAnalysis", "Processing image")
-        val bgrBytes = imageToIntArray(imageProxy)
-
-        if (!Python.isStarted()) {
-            Log.d("Python", "Starting Python interpreter")
-            Python.start(AndroidPlatform(this))
-        }
-
-        val py = Python.getInstance()
-        val pyModule = py.getModule("eyetracking_android")
-
         try {
-            // img_bytes와 has_permission 인자를 전달하여 predict_img 함수를 호출
-            Log.d("Python", "Calling predict_img with hasPermission: $hasPermission")
-            val resultBytes: ByteArray = pyModule.callAttr("predict_img", bgrBytes, hasPermission).toJava(ByteArray::class.java)
-            Log.d("Python", "predict_img called successfully")
-            val bitmap = BitmapFactory.decodeByteArray(resultBytes, 0, resultBytes.size)
-            updateImageBitmap(bitmap)
+            val bgrArray = imageToIntArray(imageProxy)
+            Log.d("ImageAnalysis", "Image converted to 3D IntArray successfully")
+
+            if (!Python.isStarted()) {
+                Log.d("Python", "Starting Python interpreter")
+                Python.start(AndroidPlatform(this))
+            }
+
+            val py = Python.getInstance()
+            val pyModule = py.getModule("eyetracking_android")
+
+            try {
+                Log.d("Python", "Calling predict_img with hasPermission: $hasPermission")
+                val resultJson: String = pyModule.callAttr("predict_img", bgrArray, hasPermission)
+                    .toJava(String::class.java)
+                Log.d("Python", "predict_img called successfully")
+
+                val resultArray = jsonToIntArray(resultJson)
+                val bitmap = intArrayToBitmap(resultArray)
+                Log.d("Python", "Image decoded successfully")
+
+                updateImageBitmap(bitmap)
+            } catch (e: Exception) {
+                Log.e("Python", "Error calling Python function", e)
+                Log.e("Python", "Exception message: ${e.message}")
+                Log.e("Python", "Exception cause: ${e.cause}")
+            } finally {
+                imageProxy.close()
+            }
         } catch (e: Exception) {
-            Log.e("Python", "Error calling Python function", e)
-        } finally {
-            imageProxy.close()
+            Log.e("ImageAnalysis", "Error processing image", e)
         }
     }
+
 
     private fun updateImageBitmap(bitmap: Bitmap) {
         Log.d("UIUpdate", "Updating image bitmap")
@@ -225,7 +278,11 @@ class MainActivity : ComponentActivity() {
 @Composable
 fun DisplayImage(bitmap: Bitmap) {
     Box(modifier = Modifier.fillMaxSize()) {
-        Image(bitmap = bitmap.asImageBitmap(), contentDescription = null, modifier = Modifier.fillMaxSize())
+        Image(
+            bitmap = bitmap.asImageBitmap(),
+            contentDescription = null,
+            modifier = Modifier.fillMaxSize()
+        )
     }
 }
 
