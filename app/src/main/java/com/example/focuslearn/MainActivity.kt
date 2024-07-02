@@ -58,7 +58,7 @@ private fun checkCameraPermission(context: Context): Boolean {
     ) == PackageManager.PERMISSION_GRANTED
 }
 
-private fun imageToBGR(imageProxy: ImageProxy): ByteArray {
+private fun imageToIntArray(imageProxy: ImageProxy): Array<Array<IntArray>> {
     val yBuffer = imageProxy.planes[0].buffer
     val uBuffer = imageProxy.planes[1].buffer
     val vBuffer = imageProxy.planes[2].buffer
@@ -88,9 +88,26 @@ private fun imageToBGR(imageProxy: ImageProxy): ByteArray {
     val bgrImage = Mat()
     Imgproc.cvtColor(yuvImage, bgrImage, Imgproc.COLOR_YUV2BGR_NV21)
 
+    // 3차원 배열 생성
+    val height = bgrImage.rows()
+    val width = bgrImage.cols()
+    val bgrArray = Array(height) { Array(width) { IntArray(3) } }
+
     val bgrBytes = ByteArray(bgrImage.total().toInt() * bgrImage.elemSize().toInt())
     bgrImage.get(0, 0, bgrBytes)
-    return bgrBytes
+
+    // ByteArray를 3차원 IntArray로 변환
+    var index = 0
+    for (i in 0 until height) {
+        for (j in 0 until width) {
+            bgrArray[i][j][0] = bgrBytes[index].toInt() and 0xFF  // Blue
+            bgrArray[i][j][1] = bgrBytes[index + 1].toInt() and 0xFF  // Green
+            bgrArray[i][j][2] = bgrBytes[index + 2].toInt() and 0xFF  // Red
+            index += 3
+        }
+    }
+
+    return bgrArray
 }
 
 class MainActivity : ComponentActivity() {
@@ -174,7 +191,7 @@ class MainActivity : ComponentActivity() {
 
     private fun processImageProxy(imageProxy: ImageProxy, hasPermission: Boolean) {
         Log.d("ImageAnalysis", "Processing image")
-        val bgrBytes = imageToBGR(imageProxy)
+        val bgrBytes = imageToIntArray(imageProxy)
 
         if (!Python.isStarted()) {
             Log.d("Python", "Starting Python interpreter")
