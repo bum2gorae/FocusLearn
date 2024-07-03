@@ -63,6 +63,9 @@ chaquopy {
             // A requirement specifier, with or without a version number:
             install("opencv-python")
             install("ultralytics")
+            install("flask")
+            install("requests")
+//            install("mediapipe")
 //            install("requests==2.24.0")
 
             // An sdist or wheel filename, relative to the project directory:
@@ -104,4 +107,6 @@ dependencies {
     implementation(libs.androidx.camera.view.v100alpha31)
     implementation (libs.kotlinx.coroutines.core.v152)
     implementation (libs.kotlinx.coroutines.android.v152)
+    implementation("com.squareup.okhttp3:okhttp:4.9.1")
+    implementation("com.google.code.gson:gson:2.8.8")
 }

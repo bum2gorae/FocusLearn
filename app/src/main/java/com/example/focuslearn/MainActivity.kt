@@ -18,7 +18,10 @@ import androidx.camera.core.ImageProxy
 import androidx.camera.core.Preview
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
@@ -26,34 +29,72 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
-import com.chaquo.python.Python
-import com.chaquo.python.android.AndroidPlatform
 import com.example.focuslearn.ui.theme.FocusLearnTheme
+import com.google.gson.Gson
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
-import org.json.JSONObject
+import okhttp3.MediaType.Companion.toMediaTypeOrNull
+import okhttp3.OkHttpClient
+import okhttp3.Request
+import okhttp3.RequestBody.Companion.toRequestBody
 import org.opencv.core.CvType
 import org.opencv.core.Mat
 import org.opencv.imgproc.Imgproc
-
+import java.io.IOException
 
 class MainViewModel : ViewModel() {
     val imageBitmap = MutableLiveData<Bitmap?>()
-    val eyeInfoData = MutableLiveData<eyeInfo?>()
 }
+
+fun postDataToFlaskServer(json: String) {
+    val client = OkHttpClient()
+
+    val mediaType = "application/json; charset=utf-8".toMediaTypeOrNull()
+    val requestBody = json.toRequestBody(mediaType)
+
+    val request = Request.Builder()
+        .url("http://192.168.45.12:5000/test") // Flask 서버의 엔드포인트 URL
+        .post(requestBody)
+        .build()
+//    val request1 = Request.Builder()
+//        .url("http://192.168.45.12:5000/test1") // Flask 서버의 엔드포인트 URL
+//        .post(requestBody)
+//        .build()
+    Log.d("flask", "requestFinish")
+
+    client.newCall(request).execute().use { response ->
+        if (!response.isSuccessful) throw IOException("Unexpected code $response")
+
+        println(response.body?.string())
+    }
+//    client.newCall(request1).execute().use { response ->
+//        if (!response.isSuccessful) throw IOException("Unexpected code $response")
+//
+//        println(response.body?.string())
+//    }
+}
+
 
 private fun checkCameraPermission(context: Context): Boolean {
     return ActivityCompat.checkSelfPermission(
         context,
         Manifest.permission.CAMERA
+    ) == PackageManager.PERMISSION_GRANTED
+}
+
+private fun checkInternetPermission(context: Context): Boolean {
+    return ActivityCompat.checkSelfPermission(
+        context,
+        Manifest.permission.INTERNET
     ) == PackageManager.PERMISSION_GRANTED
 }
 
@@ -109,36 +150,6 @@ private fun imageToIntArray(imageProxy: ImageProxy): Array<Array<IntArray>> {
     return bgrArray
 }
 
-data class eyeInfo(
-    val eyes: List<Pair<Int, Int>>,
-    val irises: List<Pair<Int, Int>>
-)
-
-private fun jsonToEyeInfo(json: String): eyeInfo {
-    val jsonObject = JSONObject(json)
-    val eyesArray = jsonObject.getJSONArray("eyes")
-    val irisesArray = jsonObject.getJSONArray("irises")
-
-    val eyesList = mutableListOf<Pair<Int, Int>>()
-    val irisesList = mutableListOf<Pair<Int, Int>>()
-
-    for (i in 0 until eyesArray.length()) {
-        val eyeObject = eyesArray.getJSONObject(i)
-        val xloc = eyeObject.getInt("xloc")
-        val yloc = eyeObject.getInt("yloc")
-        eyesList.add(Pair(xloc, yloc))
-    }
-
-    for (i in 0 until irisesArray.length()) {
-        val irisObject = irisesArray.getJSONObject(i)
-        val xloc = irisObject.getInt("xloc")
-        val yloc = irisObject.getInt("yloc")
-        irisesList.add(Pair(xloc, yloc))
-    }
-
-    return eyeInfo(eyes = eyesList, irises = irisesList)
-}
-
 
 class MainActivity : ComponentActivity() {
     private val viewModel: MainViewModel by viewModels()
@@ -153,15 +164,22 @@ class MainActivity : ComponentActivity() {
         setContent {
             FocusLearnTheme {
                 val context = LocalContext.current
-                var hasPermission by remember { mutableStateOf(checkCameraPermission(context)) }
+                var hasCameraPermission by remember { mutableStateOf(checkCameraPermission(context)) }
+                var hasInternetPermission by remember { mutableStateOf(checkInternetPermission(context)) }
                 val cameraPermissionRequest = rememberLauncherForActivityResult(
                     ActivityResultContracts.RequestPermission()
                 ) { permissions ->
-                    hasPermission = permissions
+                    hasCameraPermission = permissions
                     Log.d("Permissions", "Camera permission granted: $permissions")
                 }
+                val internetPermissionRequest = rememberLauncherForActivityResult(
+                    ActivityResultContracts.RequestPermission()
+                ) { permissions ->
+                    hasInternetPermission = permissions
+                    Log.d("Permissions", "Internet permission granted: $permissions")
+                }
                 val previewView = remember { PreviewView(context) }
-                if (hasPermission) {
+                if (hasCameraPermission&&hasInternetPermission) {
                     Log.d("Permissions", "Camera permission already granted")
                     AndroidView(
                         factory = {
@@ -170,7 +188,7 @@ class MainActivity : ComponentActivity() {
                         modifier = Modifier.fillMaxSize()
                     )
                     LaunchedEffect(previewView) {
-                        startCamera(previewView, hasPermission)
+                        startCamera(previewView, hasCameraPermission)
                     }
                 } else {
                     Log.d("Permissions", "Requesting camera permission")
@@ -178,19 +196,15 @@ class MainActivity : ComponentActivity() {
                         cameraPermissionRequest.launch(Manifest.permission.CAMERA)
                     }
                 }
-                val eyeInfo by viewModel.eyeInfoData.observeAsState()
-                eyeInfo?.let {
-                    if (it.eyes.isNotEmpty()) {
-                        Log.d("eyeInfo", it.eyes[0].toString())
-                    } else {
-                        Log.d("eyeInfo", "No eye data available")
-                    }
+                val bitmap = viewModel.imageBitmap.observeAsState()
+                bitmap.value?.let {
+                    DisplayImage(it)
                 }
             }
         }
     }
 
-    private fun startCamera(previewView: PreviewView, hasPermission: Boolean) {
+    private fun startCamera(previewView: PreviewView, hasCameraPermission: Boolean) {
         Log.d("CameraX", "Starting camera")
         val cameraProviderFuture = ProcessCameraProvider.getInstance(this)
 
@@ -206,9 +220,7 @@ class MainActivity : ComponentActivity() {
                 .build()
                 .also {
                     it.setAnalyzer(ContextCompat.getMainExecutor(this)) { imageProxy ->
-                        CoroutineScope(Dispatchers.Default).launch {
-                            processImageProxy(imageProxy, hasPermission)
-                        }
+                        processImageProxy(imageProxy)
                     }
                 }
 
@@ -227,51 +239,23 @@ class MainActivity : ComponentActivity() {
         }, ContextCompat.getMainExecutor(this))
     }
 
-    private suspend fun processImageProxy(imageProxy: ImageProxy, hasPermission: Boolean) {
+    private fun processImageProxy(imageProxy: ImageProxy) {
         Log.d("ImageAnalysis", "Processing image")
-        try {
-            val bgrBytes = imageToIntArray(imageProxy)
-//            val nv21Bytes = withContext(Dispatchers.IO) {
-//                imageToBGRByteArray(imageProxy)
-//            }
+        val gson = Gson()
 
-            if (!Python.isStarted()) {
-                Log.d("Python", "Starting Python interpreter")
-                Python.start(AndroidPlatform(this))
-            }
-
-            Log.d("width", "${imageProxy.width}")
-            Log.d("height", "${imageProxy.height}")
-
-            val py = Python.getInstance()
-            val pyModule = py.getModule("eyetracking_android")
-
-            try {
-                Log.d("Python", "Calling predict_img with hasPermission: $hasPermission")
-                val resultJson: String = withContext(Dispatchers.IO) {
-                    pyModule.callAttr(
-//                        "predict_img", nv21Bytes, imageProxy.width, imageProxy.height
-                    "predict_img", bgrBytes
-                    ).toJava(String::class.java)
+        CoroutineScope(Dispatchers.IO).launch {
+            while (true) {
+                try {
+                    val bgrBytes = imageToIntArray(imageProxy)
+                    val jsonString = gson.toJson(bgrBytes)
+                    postDataToFlaskServer(jsonString)
+                } catch (e: Exception) {
+                    Log.e("ImageAnalysis", "Error processing image", e)
+                } finally {
+                    imageProxy.close()
                 }
-                Log.d("Python", "predict_img called successfully")
-
-                val eyeInfoObject = jsonToEyeInfo(resultJson)
-                withContext(Dispatchers.Main) {
-                    viewModel.eyeInfoData.postValue(eyeInfoObject)
-                }
-                Log.d("Python", "Eye info extracted successfully")
-
-            } catch (e: Exception) {
-                Log.e("Python", "Error calling Python function", e)
-                Log.e("Python", "Exception message: ${e.message}")
-                Log.e("Python", "Exception cause: ${e.cause}")
-            } finally {
-                imageProxy.close()
+                delay(1000)  // 1초마다 이미지를 전송합니다.
             }
-        } catch (e: Exception) {
-            Log.e("ImageAnalysis", "Error processing image", e)
-            imageProxy.close()
         }
     }
 }
@@ -319,3 +303,9 @@ private fun imageToBGRByteArray(imageProxy: ImageProxy): ByteArray {
     return bgrBytes
 }
 
+@Composable
+fun DisplayImage(bitmap: Bitmap) {
+    Box(modifier = Modifier.fillMaxSize()) {
+        Image(bitmap = bitmap.asImageBitmap(), contentDescription = null, modifier = Modifier.fillMaxSize())
+    }
+}

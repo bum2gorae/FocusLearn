@@ -3,6 +3,8 @@ from ultralytics import YOLO
 import os
 import numpy as np
 import json
+from flask import Flask, request, jsonify
+import requests
 
 # 현재 작업 디렉토리 가져오기
 current_dir = os.path.dirname(os.path.abspath(__file__))
@@ -13,7 +15,14 @@ model_path = os.path.join(current_dir, 'best.pt')
 # YOLO 모델 로드
 model = YOLO(model_path)
 
+app = Flask(__name__)
+
+
 def predict_img(frame):
+    eyes_info = {
+    'eyes': [],
+    'irises': []
+    }
     try:
         # 파이썬 리스트를 NumPy 배열로 변환
         # np_img = np.frombuffer(frame, dtype=np.uint8).reshape((height, width, 3))
@@ -21,11 +30,6 @@ def predict_img(frame):
 
         # YOLO 모델 예측
         results = model.predict(np_img)
-
-        eyes_info = {
-            'eyes': [],
-            'irises': []
-        }
         
         for result in results:
             boxes = result.boxes
@@ -49,8 +53,17 @@ def predict_img(frame):
                 elif class_name == 'iris':
                     eyes_info['irises'].append({'xloc': xloc, 'yloc': yloc})
 
-        return json.dumps(eyes_info)
-    
+        response = requests.post("http://192.168.45.221:3700/eye_info", json=eyes_info)
+        return response.json()
+        
     except Exception as e:
         print(f"Error in predict_img: {e}")
-        return json.dumps({'eyes': [], 'irises': []})
+
+@app.route('/')
+def home():
+    return "Hello, Flask!"
+
+@app.route('/eye_info', methods=['GET'])
+def get_eye_info():
+    eye_data = request.args.get('eyes')
+    return jsonify({'eyes': eye_data})
