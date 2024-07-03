@@ -19,8 +19,13 @@ import androidx.camera.core.Preview
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.Button
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -28,9 +33,11 @@ import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
@@ -62,7 +69,7 @@ fun postDataToFlaskServer(json: String) {
     val requestBody = json.toRequestBody(mediaType)
 
     val request = Request.Builder()
-        .url("http://192.168.45.12:5000/test") // Flask 서버의 엔드포인트 URL
+        .url("http://192.168.0.101:3700/eye_info") // Flask 서버의 엔드포인트 URL
         .post(requestBody)
         .build()
 //    val request1 = Request.Builder()
@@ -166,6 +173,9 @@ class MainActivity : ComponentActivity() {
                 val context = LocalContext.current
                 var hasCameraPermission by remember { mutableStateOf(checkCameraPermission(context)) }
                 var hasInternetPermission by remember { mutableStateOf(checkInternetPermission(context)) }
+                var isButtonClicked  by remember {
+                    mutableStateOf(false)
+                }
                 val cameraPermissionRequest = rememberLauncherForActivityResult(
                     ActivityResultContracts.RequestPermission()
                 ) { permissions ->
@@ -181,16 +191,16 @@ class MainActivity : ComponentActivity() {
                 val previewView = remember { PreviewView(context) }
                 if (hasCameraPermission&&hasInternetPermission) {
                     Log.d("Permissions", "Camera permission already granted")
-                    AndroidView(
-                        factory = {
-                            previewView
-                        },
-                        modifier = Modifier.fillMaxSize()
-                    )
-                    LaunchedEffect(previewView) {
-                        startCamera(previewView, hasCameraPermission)
+//                    AndroidView(
+//                        factory = {
+//                            previewView
+//                        },
+//                        modifier = Modifier.fillMaxSize()
+//                    )
+                    LaunchedEffect(isButtonClicked) {
+                        startCamera()
                     }
-                } else {
+                } else if (!hasCameraPermission) {
                     Log.d("Permissions", "Requesting camera permission")
                     LaunchedEffect(Unit) {
                         cameraPermissionRequest.launch(Manifest.permission.CAMERA)
@@ -200,20 +210,34 @@ class MainActivity : ComponentActivity() {
                 bitmap.value?.let {
                     DisplayImage(it)
                 }
+
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(100.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Bottom
+                ) {
+                    Button(onClick = {
+                        isButtonClicked = !isButtonClicked
+                    }) {
+                        Text(text = "Start")
+                    }
+                }
             }
         }
     }
 
-    private fun startCamera(previewView: PreviewView, hasCameraPermission: Boolean) {
+    private fun startCamera() {
         Log.d("CameraX", "Starting camera")
         val cameraProviderFuture = ProcessCameraProvider.getInstance(this)
 
         cameraProviderFuture.addListener(Runnable {
             val cameraProvider: ProcessCameraProvider = cameraProviderFuture.get()
 
-            val preview = Preview.Builder().build().also {
-                it.setSurfaceProvider(previewView.surfaceProvider)
-            }
+//            val preview = Preview.Builder().build().also {
+//                it.setSurfaceProvider(previewView.surfaceProvider)
+//            }
 
             val imageAnalyzer = ImageAnalysis.Builder()
                 .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
@@ -229,7 +253,7 @@ class MainActivity : ComponentActivity() {
             try {
                 cameraProvider.unbindAll()
                 cameraProvider.bindToLifecycle(
-                    this, cameraSelector, preview, imageAnalyzer
+                    this, cameraSelector, imageAnalyzer
                 )
                 Log.d("CameraX", "Camera started successfully")
             } catch (exc: Exception) {
@@ -244,17 +268,14 @@ class MainActivity : ComponentActivity() {
         val gson = Gson()
 
         CoroutineScope(Dispatchers.IO).launch {
-            while (true) {
-                try {
-                    val bgrBytes = imageToIntArray(imageProxy)
-                    val jsonString = gson.toJson(bgrBytes)
-                    postDataToFlaskServer(jsonString)
-                } catch (e: Exception) {
-                    Log.e("ImageAnalysis", "Error processing image", e)
-                } finally {
-                    imageProxy.close()
-                }
-                delay(1000)  // 1초마다 이미지를 전송합니다.
+            try {
+                val bgrBytes = imageToIntArray(imageProxy)
+                val jsonString = gson.toJson(bgrBytes)
+                postDataToFlaskServer(jsonString)
+            } catch (e: Exception) {
+                Log.e("ImageAnalysis", "Error processing image", e)
+            } finally {
+                imageProxy.close()
             }
         }
     }

@@ -53,17 +53,17 @@ def predict_img(frame):
                 elif class_name == 'iris':
                     eyes_info['irises'].append({'xloc': xloc, 'yloc': yloc})
 
-        response = requests.post("http://192.168.45.221:3700/eye_info", json=eyes_info)
+        response = requests.post("http://192.168.0.101:3700/eye_info", json=eyes_info)
         return response.json()
         
     except Exception as e:
         print(f"Error in predict_img: {e}")
 
-@app.route('/')
-def home():
-    return "Hello, Flask!"
+# @app.route('/')
+# def home():
+#     return "Hello, Flask!"
 
-@app.route('/eye_info', methods=['GET'])
-def get_eye_info():
-    eye_data = request.args.get('eyes')
-    return jsonify({'eyes': eye_data})
+# @app.route('/eye_info', methods=['GET'])
+# def get_eye_info():
+#     eye_data = request.args.get('eyes')
+#     return jsonify({'eyes': eye_data})

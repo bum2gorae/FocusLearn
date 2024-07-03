@@ -1,23 +1,21 @@
 from flask import Flask, request, jsonify
 
 app = Flask(__name__)
-users = [
-    {"name": "John Doe", "age": 30}
-    ]
+eye_info = []
 
 @app.route('/')
 def home():
     return "Hello, Flask!"
 
-@app.route('/users', methods=['GET'])
-def get_users():
-    return jsonify(users)
+@app.route('/eye_info', methods=['GET'])
+def get_eye_info():
+    return jsonify(eye_info)
 
-# @app.route('/users', methods=['POST'])
-# def add_user():
-#     new_user = '{"name": "John Doe", "age": 30}'  # JSON 형식으로 데이터 수신
-#     users.append(new_user)
-#     return jsonify(new_user), 201 
+@app.route('/eye_info', methods=['POST'])
+def post_eye_info():
+    data = request.get_json()
+    eye_info.append(data)
+    return jsonify({"status": "success", "data": data}), 200
 
 if __name__ == "__main__":
-    app.run(host='192.168.45.221', port=3700)
+    app.run(host='192.168.0.101', port=3700)
