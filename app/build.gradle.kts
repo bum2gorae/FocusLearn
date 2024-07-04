@@ -2,6 +2,7 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.jetbrains.kotlin.android)
     id("com.chaquo.python")
+    id("com.google.gms.google-services")
 }
 
 android {
@@ -109,4 +110,15 @@ dependencies {
     implementation (libs.kotlinx.coroutines.android.v152)
     implementation("com.squareup.okhttp3:okhttp:4.9.1")
     implementation("com.google.code.gson:gson:2.8.8")
+    implementation(platform("com.google.firebase:firebase-bom:33.1.1"))
+    implementation("com.google.firebase:firebase-firestore")
+    implementation("com.google.firebase:firebase-analytics")
+    // Jetpack Compose
+    implementation ("androidx.compose.ui:ui:1.0.5")
+    implementation ("androidx.compose.material:material:1.0.5")
+    implementation ("androidx.compose.ui:ui-tooling:1.0.5")
+    // ExoPlayer
+    implementation("androidx.media3:media3-exoplayer:1.3.1")
+    implementation("androidx.media3:media3-exoplayer-dash:1.3.1")
+    implementation("androidx.media3:media3-ui:1.3.1")
 }
