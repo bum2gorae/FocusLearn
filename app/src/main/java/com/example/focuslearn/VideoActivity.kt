@@ -1,6 +1,7 @@
 package com.example.focuslearn
 
 
+import android.content.Context
 import android.content.Intent
 import android.graphics.Bitmap
 import android.os.Bundle
@@ -19,8 +20,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -170,6 +169,49 @@ class MainViewModel : ViewModel() {
                 Log.w("Firestore", "Error getting documents: ", exception)
             }
     }
+
+    fun fetchResultsFromFirestore(id: String, label: String, onComplete: (Double) -> Unit) {
+        firestore.collection("Company")
+            .document("#0001")
+            .collection("Employee")
+            .whereEqualTo("ID", id)
+            .get()
+            .addOnSuccessListener { documents ->
+                var totalResult = 0.0
+                var count = 0
+
+                for (document in documents) {
+                    val employeeDocId = document.id
+                    firestore.collection("Company")
+                        .document("#0001")
+                        .collection("Employee")
+                        .document(employeeDocId)
+                        .collection(label)
+                        .get()
+                        .addOnSuccessListener { results ->
+                            for (result in results) {
+                                val resultValue = result.getDouble("result") ?: 0.0
+                                totalResult += resultValue
+                                count++
+                            }
+                            if (count > 0) {
+                                val totalAvg = totalResult / count
+                                onComplete(totalAvg)
+                            } else {
+                                onComplete(0.0)
+                            }
+                        }
+                        .addOnFailureListener { e ->
+                            Log.w("Firestore", "Error getting results: ", e)
+                            onComplete(0.0)
+                        }
+                }
+            }
+            .addOnFailureListener { exception ->
+                Log.w("Firestore", "Error getting documents: ", exception)
+                onComplete(0.0)
+            }
+    }
 }
 
 
@@ -205,7 +247,7 @@ class VideoActivity : ComponentActivity() {
 
                 VideoPlayer(onPlaybackEnded = {
                     // 재생이 끝나면 MainActivity로 이동
-                    val intent = Intent(this@VideoActivity, MainActivity::class.java)
+                    val intent = Intent(this@VideoActivity, TestStartScreen::class.java)
                     startActivity(intent)
                     finish()
                 },
@@ -282,6 +324,15 @@ class VideoActivity : ComponentActivity() {
 
     override fun onDestroy() {
         super.onDestroy()
+        val sharedPreferences = getSharedPreferences("FocusLearnPreference", Context.MODE_PRIVATE)
+        val editor = sharedPreferences.edit()
+
+        viewModel.fetchResultsFromFirestore("ss01", "직장내성희롱") { totalAvg ->
+            editor.putFloat("totalAvg", totalAvg.toFloat())
+            editor.apply()
+            Log.d("SharedPreferences", "totalAvg saved: $totalAvg")
+        }
+
         viewModel.onCleared() // This will cancel all coroutines in the ViewModel
     }
 }
@@ -463,17 +514,3 @@ private fun imageToIntArray(imageProxy: ImageProxy): Array<Array<IntArray>> {
     return bgrArray
 }
 
-@Composable
-fun DisplayDataList(dataList: Map<Int, Any?>) {
-    val scrollState = rememberScrollState()
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(30.dp)
-            .verticalScroll(scrollState)
-    ) {
-        dataList.forEach { (requestId, data) ->
-            Text(text = "Request ID: $requestId, Data: $data")
-        }
-    }
-}

@@ -132,7 +132,7 @@ fun EducationVideoScreenContent() {
                             } else if (response != null && response.isSuccessful) {
                                 // DELETE 요청이 성공하면 VideoActivity로 이동
                                 Log.d("test","2")
-                                val intent = Intent(context, VideoActivity::class.java)
+                                val intent = Intent(context, PreVideoScreen::class.java)
                                 context.startActivity(intent)
                             } else {
                                 Log.d("test","3")

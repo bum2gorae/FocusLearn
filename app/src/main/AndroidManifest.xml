@@ -31,9 +31,15 @@
         </activity>
         <activity android:name=".VideoActivity"
             android:screenOrientation="landscape"/>
-        <activity android:name=".RegisterActivity"/>
         <activity android:name=".Conditions"/>
         <activity android:name=".EducationVideoScreen"/>
+        <activity android:name=".PreVideoScreen"/>
+        <activity android:name=".GuideScreen"/>
+        <activity android:name=".Focusing"/>
+        <activity android:name=".EyeRecognitionScreen"/>
+        <activity android:name=".TestStartScreen"/>
+        <activity android:name=".Quiz"/>
+        <activity android:name=".CompletionScreen"/>
     </application>
 
 </manifest>
