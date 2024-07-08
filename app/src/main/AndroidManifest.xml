@@ -32,6 +32,8 @@
         <activity android:name=".VideoActivity"
             android:screenOrientation="landscape"/>
         <activity android:name=".RegisterActivity"/>
+        <activity android:name=".Conditions"/>
+        <activity android:name=".EducationVideoScreen"/>
     </application>
 
 </manifest>
