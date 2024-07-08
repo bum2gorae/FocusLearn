@@ -53,7 +53,8 @@ def predict_img(frame):
                 elif class_name == 'iris':
                     eyes_info['irises'].append({'xloc': xloc, 'yloc': yloc})
 
-        response = requests.post("http://192.168.0.101:3700/eye_info", json=eyes_info)
+        # response = requests.post("http://192.168.0.101:3700/eye_info", json=eyes_info)
+        response = requests.post("http://192.168.45.55:3700/eye_info", json=eyes_info)
         return response.json()
         
     except Exception as e:

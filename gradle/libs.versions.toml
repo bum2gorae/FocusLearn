@@ -17,6 +17,8 @@ cameraView = "1.3.4"
 opencv-android = "4.5.3"
 chaquo = "15.0.1"
 runtimeLivedata = "1.6.8"
+navigationRuntimeKtx = "2.7.7"
+navigationCompose = "2.7.7"
 
 [libraries]
 androidx-camera-lifecycle-v110 = { module = "androidx.camera:camera-lifecycle", version.ref = "cameraLifecycle" }
@@ -42,6 +44,8 @@ kotlinx-coroutines-core-v152 = { module = "org.jetbrains.kotlinx:kotlinx-corouti
 opencv-android = { group = "org.opencv", name = "opencv-android" , version.ref = "opencv-android" }
 chaquo-python = { group = "com.chaquo.python", name = "chaquopy" , version.ref = "chaquo" }
 androidx-runtime-livedata = { group = "androidx.compose.runtime", name = "runtime-livedata", version.ref = "runtimeLivedata" }
+androidx-navigation-runtime-ktx = { group = "androidx.navigation", name = "navigation-runtime-ktx", version.ref = "navigationRuntimeKtx" }
+androidx-navigation-compose = { group = "androidx.navigation", name = "navigation-compose", version.ref = "navigationCompose" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
