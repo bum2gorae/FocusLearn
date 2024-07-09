@@ -1,5 +1,6 @@
 package com.example.focuslearn
 
+import android.content.Context
 import android.content.Intent
 import android.os.Bundle
 import android.util.Log
@@ -42,6 +43,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.focuslearn.ui.theme.FocusLearnTheme
@@ -69,6 +71,8 @@ class EducationVideoScreen : ComponentActivity() {
 @Composable
 fun EducationVideoScreenContent() {
     val context = LocalContext.current
+    val sharedPreferences = context.getSharedPreferences("FocusLearnPreference", Context.MODE_PRIVATE)
+    val certificationStatus = sharedPreferences.getString("certificationStatus", "미수료") ?: "미수료"
     val intent = Intent(context, PreVideoScreen::class.java)
     val userName = intent.getStringExtra("userName")
     val companyCode = intent.getStringExtra("CompanyCode")
@@ -159,121 +163,52 @@ fun EducationVideoScreenContent() {
                             lectureMap[key] = value as Boolean
                         }
                     }
-
-                if (lectureMap["개인정보보호"] == true) {
-                    VideoListItem(
-                        title = "개인정보보호",
-                        imageRes = R.drawable.thumbnail_1,
-                        onClick = {
-                            OkHttpClientInstance.deleteData { response, exception ->
-                                if (exception != null) {
-                                    // 요청 실패 처리
-                                    Log.d("server clear", "1")
-                                    exception.printStackTrace()
-                                } else if (response != null && response.isSuccessful) {
-                                    // DELETE 요청이 성공하면 VideoActivity로 이동
-                                    Log.d("server clear", "2")
-
-                                    context.startActivity(intent)
-                                } else {
-                                    Log.d("server clear", "3")
-                                    // 요청 실패 처리
-                                }
+                VideoListItem(
+                    title = "안전 보건 교육 영상",
+                    imageRes = R.drawable.thumbnail_1,
+                    certificationStatus = certificationStatus,
+                    onClick = {
+                        OkHttpClientInstance.deleteData { response, exception ->
+                            if (exception != null) {
+                                // 요청 실패 처리
+                                Log.d("test", "1")
+                                exception.printStackTrace()
+                            } else if (response != null && response.isSuccessful) {
+                                // DELETE 요청이 성공하면 VideoActivity로 이동
+                                Log.d("test", "2")
+                                val intent = Intent(context, PreVideoScreen::class.java)
+                                context.startActivity(intent)
+                            } else {
+                                Log.d("test", "3")
+                                // 요청 실패 처리
                             }
                         }
-                    )
-                    Spacer(modifier = Modifier.size(20.dp))
-                }
-
-                if (lectureMap["산업안전법"] == true) {
-                    VideoListItem(
-                        title = "산업안전법",
-                        imageRes = R.drawable.thumbnail_1,
-                        onClick = {
-                            OkHttpClientInstance.deleteData { response, exception ->
-                                if (exception != null) {
-                                    // 요청 실패 처리
-                                    Log.d("server clear", "1")
-                                    exception.printStackTrace()
-                                } else if (response != null && response.isSuccessful) {
-                                    // DELETE 요청이 성공하면 VideoActivity로 이동
-                                    Log.d("server clear", "2")
-
-                                    context.startActivity(intent)
-                                } else {
-                                    Log.d("server clear", "3")
-                                    // 요청 실패 처리
-                                }
-                            }
-                        }
-                    )
-                    Spacer(modifier = Modifier.size(20.dp))
-                }
-
-                if (lectureMap["장애인인식개선"] == true) {
-                    VideoListItem(
-                        title = "장애인인식개선",
-                        imageRes = R.drawable.thumbnail_1,
-                        onClick = {
-                            OkHttpClientInstance.deleteData { response, exception ->
-                                if (exception != null) {
-                                    // 요청 실패 처리
-                                    Log.d("server clear", "1")
-                                    exception.printStackTrace()
-                                } else if (response != null && response.isSuccessful) {
-                                    // DELETE 요청이 성공하면 VideoActivity로 이동
-                                    Log.d("server clear", "2")
-
-                                    context.startActivity(intent)
-                                } else {
-                                    Log.d("server clear", "3")
-                                    // 요청 실패 처리
-                                }
-                            }
-                        }
-                    )
-                    Spacer(modifier = Modifier.size(20.dp))
-                }
-
-                if (lectureMap["직장내성희롱"] == true) {
-                    VideoListItem(
-                        title = "직장내성희롱",
-                        imageRes = R.drawable.thumbnail_1,
-                        onClick = {
-                            OkHttpClientInstance.deleteData { response, exception ->
-                                if (exception != null) {
-                                    // 요청 실패 처리
-                                    Log.d("server clear", "1")
-                                    exception.printStackTrace()
-                                } else if (response != null && response.isSuccessful) {
-                                    // DELETE 요청이 성공하면 VideoActivity로 이동
-                                    Log.d("server clear", "2")
-
-                                    context.startActivity(intent)
-                                } else {
-                                    Log.d("server clear", "3")
-                                    // 요청 실패 처리
-                                }
-                            }
-                        }
-                    )
-                    Spacer(modifier = Modifier.size(20.dp))
-                }
-
+                    },
+                )
+//                Spacer(modifier = Modifier.height(16.dp))
+//                VideoListItem(
+//                    title = "중대 재해 처벌법 교육 영상",
+//                    imageRes = R.drawable.thumbnail,
+//                    onClick = {
+//                        val intent = Intent(context, VideoScreen::class.java)
+//                        context.startActivity(intent)
+//                    }
+//                )
             }
         }
     }
 }
 
-
 @Composable
-fun VideoListItem(title: String, imageRes: Int, onClick: () -> Unit) {
+fun VideoListItem(title: String, imageRes: Int, certificationStatus: String, onClick: () -> Unit) {
+    val isButtonEnabled = certificationStatus != "수료"
+
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .background(Color.White, RoundedCornerShape(8.dp))
             .padding(16.dp)
-            .clickable(onClick = onClick)
+            .clickable(onClick = onClick, enabled = isButtonEnabled)
     ) {
         Image(
             painter = painterResource(id = imageRes),
@@ -289,6 +224,17 @@ fun VideoListItem(title: String, imageRes: Int, onClick: () -> Unit) {
             color = Color.Black,
             modifier = Modifier.align(Alignment.CenterVertically)
         )
+        Spacer(modifier = Modifier.width(16.dp))
+        Text(
+            text = certificationStatus,
+            fontSize = 12.sp,
+            color = when (certificationStatus) {
+                "수료" -> Color(0xFF1F41BB) // Blue color for "수료"
+                "미수료" -> Color.Red // Red color for "미수료"
+                else -> Color.Black // Default color
+            },
+            modifier = Modifier.align(Alignment.CenterVertically)
+        )
     }
 }
 
@@ -297,19 +243,22 @@ object OkHttpClientInstance {
 
     fun deleteData(callback: (Response?, IOException?) -> Unit) {
         val request = Request.Builder()
-            .url(
-//                "http://192.168.0.101:3700/test"
-                "http://192.168.45.55:3700/test"
-            ) // Flask 서버 주소와 포트로 변경
+            .url("http://192.168.0.101:3700/test") // Flask 서버 주소와 포트로 변경
             .delete()
             .build()
 
         client.newCall(request).enqueue(object : okhttp3.Callback {
             override fun onFailure(call: okhttp3.Call, e: IOException) {
+                Log.e("OkHttpClientInstance", "DELETE request failed", e)
                 callback(null, e)
             }
 
             override fun onResponse(call: okhttp3.Call, response: Response) {
+                if (response.isSuccessful) {
+                    Log.d("OkHttpClientInstance", "DELETE request successful")
+                } else {
+                    Log.e("OkHttpClientInstance", "DELETE request failed: ${response.code}")
+                }
                 callback(response, null)
             }
         })

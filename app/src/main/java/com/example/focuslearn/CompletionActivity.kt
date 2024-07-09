@@ -37,27 +37,48 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.focuslearn.ui.theme.FocusLearnTheme
 
+
 class CompletionScreen : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        // Initialize context and shared preferences
+        val context = this // Use the Activity context
+        val sharedPreferences = context.getSharedPreferences("FocusLearnPreference", Context.MODE_PRIVATE)
+
+        // Set certificationStatus to "미수료" on app start
+        with(sharedPreferences.edit()) {
+            putString("certificationStatus", "미수료")
+            apply()
+        }
+
         setContent {
             FocusLearnTheme {
-                val context = LocalContext.current
                 val result = intent.getBooleanExtra("result", false)
-                val sharedPreferences = context.getSharedPreferences("FocusLearnPreference", Context.MODE_PRIVATE)
-                val totConcentrateAvg =  sharedPreferences.getFloat("totalAvg", 0.00f)*100
+                val totConcentrateAvg = sharedPreferences.getFloat("totalAvg", 0.00f) * 100
+
+                // Save certification status to SharedPreferences
+                val certificationStatus = if (result) "수료" else "미수료"
+                with(sharedPreferences.edit()) {
+                    putString("certificationStatus", certificationStatus)
+                    apply()
+                }
+
                 Surface(modifier = Modifier.fillMaxSize(), color = Color(0xFFF5F5F5)) {
                     CompletionScreenContent(
                         completionDate = "2024-07-10",
                         progressRate = "100%",
                         concentrationRate = "${totConcentrateAvg.toInt()}%",
-                        certificationStatus = if (result) "수료" else "미수료"
+                        certificationStatus = certificationStatus
                     )
                 }
             }
         }
     }
 }
+
+
+
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
