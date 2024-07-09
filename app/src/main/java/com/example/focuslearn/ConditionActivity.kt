@@ -2,6 +2,7 @@ package com.example.focuslearn
 
 import android.content.Intent
 import android.os.Bundle
+import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.Image
@@ -76,7 +77,6 @@ class Conditions : ComponentActivity() {
             modifier = Modifier
                 .fillMaxSize()
         ) {
-            val userID = intent.getStringExtra("userID")
             val context = LocalContext.current
 
             Image(
@@ -181,9 +181,20 @@ class Conditions : ComponentActivity() {
                 Button(
                     onClick = {
                         if (term1Checked && term2Checked && term3Checked) {
+                            val userID = intent.getStringExtra("userID")
+                            val companyCode = intent.getStringExtra("companyCode")
+                            val userName = intent.getStringExtra("userName")
+                            val lectureCode = intent.getBooleanArrayExtra("lectureCode")
+                            val lectureStatus = intent.getBooleanArrayExtra("lectureStatus")
+
                             val intent = Intent(context, EducationVideoScreen::class.java)
                             intent.putExtra("userID", userID)
+                            intent.putExtra("companyCode", companyCode)
+                            intent.putExtra("userName", userName)
+                            intent.putExtra("lectureCode", lectureCode)
+                            intent.putExtra("lectureStatus", lectureStatus)
 
+                            Log.d("cond data check", "$userID, $companyCode, ${userName}, ${lectureCode?.get(0)}, ${lectureStatus?.get(0)}")
                             context.startActivity(intent)
                         } else {
                             showDialog = true

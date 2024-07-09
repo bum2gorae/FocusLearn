@@ -26,7 +26,7 @@ class Focusing : ComponentActivity() {
         setContent {
             FocusLearnTheme {
                 Surface(modifier = Modifier.fillMaxSize(), color = Color(0xFFE0E0E0)) { // 차분한 배경색
-                    EyeRecognitionContent()
+                    EyeRecognitionContent(intent)
                 }
             }
         }
@@ -35,9 +35,14 @@ class Focusing : ComponentActivity() {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun EyeRecognitionContent() {
+fun EyeRecognitionContent(intent1: Intent) {
     var position by remember { mutableStateOf(Position.TopRight) }
     val context = LocalContext.current
+    val userID = intent1.getStringExtra("userID")
+    val companyCode = intent1.getStringExtra("companyCode")
+    val userName = intent1.getStringExtra("userName")
+    val lectureCode = intent1.getBooleanArrayExtra("lectureCode")
+    val lectureStatus = intent1.getBooleanArrayExtra("lectureStatus")
 
     LaunchedEffect(Unit) {
         while (true) {
@@ -46,6 +51,11 @@ fun EyeRecognitionContent() {
                 Position.TopRight -> Position.BottomLeft
                 Position.BottomLeft -> {
                     val intent = Intent(context, EyeRecognitionScreen::class.java)
+                    intent.putExtra("userID", userID)
+                    intent.putExtra("companyCode", companyCode)
+                    intent.putExtra("userName", userName)
+                    intent.putExtra("lectureCode", lectureCode)
+                    intent.putExtra("lectureStatus", lectureStatus)
                     context.startActivity(intent)
                     break
                 }
@@ -110,12 +120,4 @@ fun RedDotWithMessage(position: Position) {
 
 enum class Position {
     TopRight, BottomLeft
-}
-
-@Preview(showBackground = true)
-@Composable
-fun EyeRecognitionPreview() {
-    FocusLearnTheme {
-        EyeRecognitionContent()
-    }
 }

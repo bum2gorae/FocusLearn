@@ -29,7 +29,7 @@ class EyeRecognitionScreen : ComponentActivity() {
         setContent {
             FocusLearnTheme {
                 Surface(modifier = Modifier.fillMaxSize(), color = Color(0xFFF5F5F5)) {
-                    EyeRecognitionScreenContent()
+                    EyeRecognitionScreenContent(intent)
                 }
             }
         }
@@ -38,11 +38,16 @@ class EyeRecognitionScreen : ComponentActivity() {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun EyeRecognitionScreenContent() {
+fun EyeRecognitionScreenContent(intent1: Intent) {
     Box(
         modifier = Modifier
             .fillMaxSize()
     ) {
+        val userID = intent1.getStringExtra("userID")
+        val companyCode = intent1.getStringExtra("companyCode")
+        val userName = intent1.getStringExtra("userName")
+        val lectureCode = intent1.getBooleanArrayExtra("lectureCode")
+        val lectureStatus = intent1.getBooleanArrayExtra("lectureStatus")
         Image(
             painter = painterResource(id = R.drawable.focuslearn_background),
             contentDescription = null,
@@ -105,6 +110,11 @@ fun EyeRecognitionScreenContent() {
             Button(
                 onClick = {
                     val intent = Intent(context, VideoActivity::class.java)
+                    intent.putExtra("userID", userID)
+                    intent.putExtra("companyCode", companyCode)
+                    intent.putExtra("userName", userName)
+                    intent.putExtra("lectureCode", lectureCode)
+                    intent.putExtra("lectureStatus", lectureStatus)
                     context.startActivity(intent)
                 },
                 modifier = Modifier
@@ -124,13 +134,5 @@ fun EyeRecognitionScreenContent() {
 
 
         }
-    }
-}
-
-@Preview(showBackground = true)
-@Composable
-fun EyeRecognitionScreenPreview() {
-    FocusLearnTheme {
-        EyeRecognitionScreenContent()
     }
 }

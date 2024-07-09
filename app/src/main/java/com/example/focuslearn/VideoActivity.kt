@@ -363,8 +363,8 @@ fun VideoPlayer(
     val player = remember {
         ExoPlayer.Builder(context).build().apply {
             val mediaItem = MediaItem.fromUri(
-//                "http://192.168.0.101:3700/uploads/Workplace_harassment_1.mp4"
-                "http://192.168.45.55:3700/uploads/Workplace_harassment_1.mp4"
+                "http://192.168.0.101:3700/uploads/Workplace_harassment_1.mp4"
+//                "http://192.168.45.55:3700/uploads/Workplace_harassment_1.mp4"
 
             )
             setMediaItem(mediaItem)
@@ -421,8 +421,8 @@ fun postDataToFlaskServer(json: String, viewModel: MainViewModel) {
 
     val request = Request.Builder()
         // Flask 서버의 엔드포인트 URL
-//        .url("http://192.168.0.101:3700/test")
-        .url("http://192.168.45.55:3700/test")
+        .url("http://192.168.0.101:3700/test")
+//        .url("http://192.168.45.55:3700/test")
         .post(requestBody)
         .build()
     Log.d("flask", "requestFinish")

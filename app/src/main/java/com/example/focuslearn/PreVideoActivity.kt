@@ -41,7 +41,8 @@ class PreVideoScreen : ComponentActivity() {
                             "작업장의 안전보건 지식 습득",
                             "대처능력을 키워 산업재해 예방",
                             "근로자의 생명과 신체 안전 도모"
-                        )
+                        ),
+                        intent
                     )
                 }
             }
@@ -57,6 +58,7 @@ fun VideoScreenContent(
     duration: String,
     deadline: String,
     requirements: List<String>,
+    intent1: Intent
 ) {
     val context = LocalContext.current
 
@@ -64,6 +66,11 @@ fun VideoScreenContent(
         modifier = Modifier
             .fillMaxSize()
     ) {
+        val userID = intent1.getStringExtra("userID")
+        val companyCode = intent1.getStringExtra("companyCode")
+        val userName = intent1.getStringExtra("userName")
+        val lectureCode = intent1.getBooleanArrayExtra("lectureCode")
+        val lectureStatus = intent1.getBooleanArrayExtra("lectureStatus")
         Image(
             painter = painterResource(id = R.drawable.focuslearn_background),
             contentDescription = null,
@@ -88,13 +95,19 @@ fun VideoScreenContent(
 
             Spacer(modifier = Modifier.height(20.dp))
 
+            val intent = Intent(context, GuideScreen::class.java)
+            intent.putExtra("userID", userID)
+            intent.putExtra("companyCode", companyCode)
+            intent.putExtra("userName", userName)
+            intent.putExtra("lectureCode", lectureCode)
+            intent.putExtra("lectureStatus", lectureStatus)
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(200.dp)
                     .background(Color.LightGray, RoundedCornerShape(16.dp))
                     .clickable {
-                        val intent = Intent(context, GuideScreen::class.java)
+
                         context.startActivity(intent)
                     }
             ) {
@@ -166,24 +179,6 @@ fun RequirementItem(requirement: String) {
             text = requirement,
             fontSize = 14.sp,
             color = Color.White
-        )
-    }
-}
-
-@Preview(showBackground = true)
-@Composable
-fun VideoScreenPreview() {
-    FocusLearnTheme {
-        VideoScreenContent(
-            title = "안전한 일터를 위한 중대재해처벌법",
-            description = "안전 보건 교육 영상",
-            duration = "34분",
-            deadline = "마감기한 8월 26일",
-            requirements = listOf(
-                "작업장의 안전보건 지식 습득",
-                "대처능력을 키워 산업재해 예방",
-                "근로자의 생명과 신체 안전 도모"
-            )
         )
     }
 }

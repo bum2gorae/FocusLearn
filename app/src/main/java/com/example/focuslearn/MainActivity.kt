@@ -101,7 +101,8 @@ class MainActivity : ComponentActivity() {
                         cameraPermissionRequest.launch(Manifest.permission.CAMERA)
                     }
                 }
-                val sharedPreferences: SharedPreferences = getSharedPreferences("MyPrefs", Context.MODE_PRIVATE)
+                val sharedPreferences: SharedPreferences =
+                    getSharedPreferences("MyPrefs", Context.MODE_PRIVATE)
 
 
                 Surface(modifier = Modifier.fillMaxSize(), color = Color(0xFFF5F5F5)) {
@@ -190,9 +191,43 @@ fun LoginScreen(context: Context, sharedPreferences: SharedPreferences) {
 
             Button(
                 onClick = {
-                    val intent = Intent(context, Conditions::class.java)
-                    intent.putExtra("userID", id)
-                    context.startActivity(intent)
+                    val fireDB = Firebase.firestore
+                    fireDB.collection("Company").get()
+                        .addOnSuccessListener { companyDocs ->
+                            Log.d("onSuccess", "success")
+                            for (companyDoc in companyDocs) {
+                                val companyCode = companyDoc.id
+                                fireDB.collection("Company").document(companyCode)
+                                    .collection("Employee")
+                                    .whereEqualTo("ID", id).get().addOnSuccessListener { Docs ->
+                                        for (Doc in Docs) {
+                                            val intent = Intent(context, Conditions::class.java)
+                                            intent.putExtra("userID", id)
+                                            intent.putExtra("companyCode", companyCode)
+                                            intent.putExtra("userName", Doc.id)
+                                            val lectureCodeMap = Doc["LectureCode"] as Map<String?, Boolean?>
+                                            val lectureStatusMap = Doc["LectureStatus"] as Map<String?, Boolean?>
+                                            val lectureCodeList = booleanArrayOf(false, false, false, false)
+                                            val lectureStatusList = booleanArrayOf(false, false, false, false)
+                                            for (i in 0..3) {
+                                                lectureCodeList[i] = lectureCodeMap[lectureList[i]] as Boolean
+                                            }
+                                            intent.putExtra("lectureCode", lectureCodeList)
+                                            for (i in 0..3) {
+                                                lectureStatusList[i] = lectureStatusMap[lectureList[i]] as Boolean
+                                            }
+                                            intent.putExtra("lectureStatus", lectureCodeList)
+                                            Log.d("Login data check", "$id, $companyCode, ${Doc.id}, ${lectureCodeMap["산업안전법"]}, ${lectureStatusMap["산업안전법"]}")
+                                            context.startActivity(intent)
+                                        }
+                                    }
+
+                            }
+                        }
+
+
+
+
                 },
                 modifier = Modifier
                     .fillMaxWidth()
@@ -216,3 +251,9 @@ fun LoginScreen(context: Context, sharedPreferences: SharedPreferences) {
     }
 }
 
+val lectureList = listOf(
+    "개인정보보호",
+    "산업안전법",
+    "장애인인식개선",
+    "직장내성희롱"
+)

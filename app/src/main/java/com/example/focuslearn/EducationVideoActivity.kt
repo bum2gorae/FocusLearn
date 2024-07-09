@@ -60,7 +60,7 @@ class EducationVideoScreen : ComponentActivity() {
         setContent {
             FocusLearnTheme {
                 Surface(modifier = Modifier.fillMaxSize(), color = Color(0xFFF5F5F5)) {
-                    EducationVideoScreenContent()
+                    EducationVideoScreenContent(intent)
                 }
             }
         }
@@ -69,37 +69,8 @@ class EducationVideoScreen : ComponentActivity() {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun EducationVideoScreenContent() {
+fun EducationVideoScreenContent(intent1: Intent) {
     val context = LocalContext.current
-    var companyCode by remember { mutableStateOf("") }
-    var userName by remember { mutableStateOf("") }
-    val intent = Intent(context, PreVideoScreen::class.java)
-    val userID = intent.getStringExtra("userID")
-    LaunchedEffect(Unit) {
-        val fireDB = Firebase.firestore
-        fireDB.collection("Company").get()
-            .addOnSuccessListener { companyDocs ->
-                Log.d("onSuccess", "success")
-                for (companyDoc in companyDocs) {
-                    val companyID = companyDoc.id
-                    Log.d("CompanyId", companyID)
-                    fireDB.collection("Company").document(companyID)
-                        .collection("Employee")
-                        .whereEqualTo("ID", userID).get().addOnSuccessListener { Docs ->
-                            Log.d("onSuccess2", "success2")
-                            for (Doc in Docs) {
-                                Log.d("CompanyName", Doc.id)
-                                companyCode = companyID
-                                userName = Doc.id
-                            }
-                        }
-
-                }
-            }
-    }
-    val sharedPreferences =
-        context.getSharedPreferences("FocusLearnPreference", Context.MODE_PRIVATE)
-    val certificationStatus = sharedPreferences.getString("certificationStatus", "미수료") ?: "미수료"
     var showDialog by remember { mutableStateOf(false) }
 
 
@@ -123,6 +94,15 @@ fun EducationVideoScreenContent() {
         modifier = Modifier
             .fillMaxSize()
     ) {
+        val userID = intent1.getStringExtra("userID")
+        val companyCode = intent1.getStringExtra("companyCode")
+        val userName = intent1.getStringExtra("userName")
+        val lectureCode = intent1.getBooleanArrayExtra("lectureCode")
+        val lectureStatus = intent1.getBooleanArrayExtra("lectureStatus")
+
+
+
+
         Image(
             painter = painterResource(id = R.drawable.focuslearn_background),
             contentDescription = null,
@@ -175,21 +155,21 @@ fun EducationVideoScreenContent() {
                 modifier = Modifier
                     .fillMaxWidth()
             ) {
-                val lectureMap = mutableMapOf<String, Boolean>()
-                val fireDB = Firebase.firestore
-                fireDB.collection("Company").document(companyCode).collection("Employee")
-                    .document(userName).get().addOnSuccessListener { field ->
-                        val fieldLectureCode = field["LectureCode"] as? Map<String, Boolean>
-                        fieldLectureCode?.keys?.forEach { key ->
-                            val value = fieldLectureCode[key]
-                            lectureMap[key] = value as Boolean
-                        }
-                    }
-                if (lectureMap["개인정보보호"] == true) {
+
+                val intent = Intent(context, PreVideoScreen::class.java)
+                intent.putExtra("userID", userID)
+                intent.putExtra("companyCode", companyCode)
+                intent.putExtra("userName", userName)
+                intent.putExtra("lectureCode", lectureCode)
+                intent.putExtra("lectureStatus", lectureStatus)
+                Log.d("companyCode", companyCode.toString())
+
+
+                if (lectureStatus?.get(0) == true) {
                     VideoListItem(
                         title = "개인정보보호",
                         imageRes = R.drawable.thumbnail_1,
-                        certificationStatus = certificationStatus,
+                        certificationStatus = lectureStatus.get(0),
                         onClick = {
                             OkHttpClientInstance.deleteData { response, exception ->
                                 if (exception != null) {
@@ -209,11 +189,11 @@ fun EducationVideoScreenContent() {
                     )
                     Spacer(modifier = Modifier.height(16.dp))
                 }
-                if (lectureMap["산업안전법"] == true) {
+                if (lectureStatus?.get(1) == true) {
                     VideoListItem(
                         title = "산업안전법",
                         imageRes = R.drawable.thumbnail_2,
-                        certificationStatus = certificationStatus,
+                        certificationStatus = lectureStatus.get(1),
                         onClick = {
                             OkHttpClientInstance.deleteData { response, exception ->
                                 if (exception != null) {
@@ -233,11 +213,11 @@ fun EducationVideoScreenContent() {
                     )
                     Spacer(modifier = Modifier.height(16.dp))
                 }
-                if (lectureMap["장애인인식개선"] == true) {
+                if (lectureStatus?.get(2) == true) {
                     VideoListItem(
                         title = "장애인인식개선",
                         imageRes = R.drawable.thumbnail_2,
-                        certificationStatus = certificationStatus,
+                        certificationStatus = lectureStatus.get(2),
                         onClick = {
                             OkHttpClientInstance.deleteData { response, exception ->
                                 if (exception != null) {
@@ -257,11 +237,11 @@ fun EducationVideoScreenContent() {
                     )
                     Spacer(modifier = Modifier.height(16.dp))
                 }
-                if (lectureMap["직장내성희롱"] == true) {
+                if (lectureStatus?.get(3) == true) {
                     VideoListItem(
                         title = "직장내성희롱",
                         imageRes = R.drawable.thumbnail_1,
-                        certificationStatus = certificationStatus,
+                        certificationStatus = lectureStatus.get(3),
                         onClick = {
                             OkHttpClientInstance.deleteData { response, exception ->
                                 if (exception != null) {
@@ -286,16 +266,16 @@ fun EducationVideoScreenContent() {
     }
 }
 
+
 @Composable
-fun VideoListItem(title: String, imageRes: Int, certificationStatus: String, onClick: () -> Unit) {
-    val isButtonEnabled = certificationStatus != "수료"
+fun VideoListItem(title: String, imageRes: Int, certificationStatus: Boolean, onClick: () -> Unit) {
 
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .background(Color.White, RoundedCornerShape(8.dp))
             .padding(16.dp)
-            .clickable(onClick = onClick, enabled = isButtonEnabled)
+            .clickable(onClick = onClick, enabled = !certificationStatus)
     ) {
         Image(
             painter = painterResource(id = imageRes),
@@ -313,12 +293,11 @@ fun VideoListItem(title: String, imageRes: Int, certificationStatus: String, onC
         )
         Spacer(modifier = Modifier.width(16.dp))
         Text(
-            text = certificationStatus,
+            text = if (certificationStatus) "수료" else "미수료",
             fontSize = 12.sp,
-            color = when (certificationStatus) {
-                "수료" -> Color(0xFF1F41BB) // Blue color for "수료"
-                "미수료" -> Color.Red // Red color for "미수료"
-                else -> Color.Black // Default color
+            color = if (certificationStatus) {
+                Color(0xFF1F41BB) // Blue color for "수료"
+            } else {Color.Red // Default color
             },
             modifier = Modifier.align(Alignment.CenterVertically)
         )
