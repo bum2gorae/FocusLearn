@@ -30,6 +30,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -43,7 +44,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.focuslearn.ui.theme.FocusLearnTheme
@@ -71,13 +71,37 @@ class EducationVideoScreen : ComponentActivity() {
 @Composable
 fun EducationVideoScreenContent() {
     val context = LocalContext.current
-    val sharedPreferences = context.getSharedPreferences("FocusLearnPreference", Context.MODE_PRIVATE)
-    val certificationStatus = sharedPreferences.getString("certificationStatus", "미수료") ?: "미수료"
+    var companyCode by remember { mutableStateOf("") }
+    var userName by remember { mutableStateOf("") }
     val intent = Intent(context, PreVideoScreen::class.java)
-    val userName = intent.getStringExtra("userName")
-    val companyCode = intent.getStringExtra("CompanyCode")
     val userID = intent.getStringExtra("userID")
+    LaunchedEffect(Unit) {
+        val fireDB = Firebase.firestore
+        fireDB.collection("Company").get()
+            .addOnSuccessListener { companyDocs ->
+                Log.d("onSuccess", "success")
+                for (companyDoc in companyDocs) {
+                    val companyID = companyDoc.id
+                    Log.d("CompanyId", companyID)
+                    fireDB.collection("Company").document(companyID)
+                        .collection("Employee")
+                        .whereEqualTo("ID", userID).get().addOnSuccessListener { Docs ->
+                            Log.d("onSuccess2", "success2")
+                            for (Doc in Docs) {
+                                Log.d("CompanyName", Doc.id)
+                                companyCode = companyID
+                                userName = Doc.id
+                            }
+                        }
+
+                }
+            }
+    }
+    val sharedPreferences =
+        context.getSharedPreferences("FocusLearnPreference", Context.MODE_PRIVATE)
+    val certificationStatus = sharedPreferences.getString("certificationStatus", "미수료") ?: "미수료"
     var showDialog by remember { mutableStateOf(false) }
+
 
     if (showDialog) {
         AlertDialog(
@@ -99,7 +123,6 @@ fun EducationVideoScreenContent() {
         modifier = Modifier
             .fillMaxSize()
     ) {
-        val scrollstate = rememberScrollState()
         Image(
             painter = painterResource(id = R.drawable.focuslearn_background),
             contentDescription = null,
@@ -151,49 +174,113 @@ fun EducationVideoScreenContent() {
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .verticalScroll(scrollstate)
             ) {
                 val lectureMap = mutableMapOf<String, Boolean>()
                 val fireDB = Firebase.firestore
-                fireDB.collection("Company").document(companyCode.toString()).collection("Employee")
-                    .document(userName.toString()).get().addOnSuccessListener { field ->
+                fireDB.collection("Company").document(companyCode).collection("Employee")
+                    .document(userName).get().addOnSuccessListener { field ->
                         val fieldLectureCode = field["LectureCode"] as? Map<String, Boolean>
                         fieldLectureCode?.keys?.forEach { key ->
                             val value = fieldLectureCode[key]
                             lectureMap[key] = value as Boolean
                         }
                     }
-                VideoListItem(
-                    title = "안전 보건 교육 영상",
-                    imageRes = R.drawable.thumbnail_1,
-                    certificationStatus = certificationStatus,
-                    onClick = {
-                        OkHttpClientInstance.deleteData { response, exception ->
-                            if (exception != null) {
-                                // 요청 실패 처리
-                                Log.d("test", "1")
-                                exception.printStackTrace()
-                            } else if (response != null && response.isSuccessful) {
-                                // DELETE 요청이 성공하면 VideoActivity로 이동
-                                Log.d("test", "2")
-                                val intent = Intent(context, PreVideoScreen::class.java)
-                                context.startActivity(intent)
-                            } else {
-                                Log.d("test", "3")
-                                // 요청 실패 처리
+                if (lectureMap["개인정보보호"] == true) {
+                    VideoListItem(
+                        title = "개인정보보호",
+                        imageRes = R.drawable.thumbnail_1,
+                        certificationStatus = certificationStatus,
+                        onClick = {
+                            OkHttpClientInstance.deleteData { response, exception ->
+                                if (exception != null) {
+                                    // 요청 실패 처리
+                                    Log.d("test", "1")
+                                    exception.printStackTrace()
+                                } else if (response != null && response.isSuccessful) {
+                                    // DELETE 요청이 성공하면 VideoActivity로 이동
+                                    Log.d("test", "2")
+                                    context.startActivity(intent)
+                                } else {
+                                    Log.d("test", "3")
+                                    // 요청 실패 처리
+                                }
                             }
-                        }
-                    },
-                )
-//                Spacer(modifier = Modifier.height(16.dp))
-//                VideoListItem(
-//                    title = "중대 재해 처벌법 교육 영상",
-//                    imageRes = R.drawable.thumbnail,
-//                    onClick = {
-//                        val intent = Intent(context, VideoScreen::class.java)
-//                        context.startActivity(intent)
-//                    }
-//                )
+                        },
+                    )
+                    Spacer(modifier = Modifier.height(16.dp))
+                }
+                if (lectureMap["산업안전법"] == true) {
+                    VideoListItem(
+                        title = "산업안전법",
+                        imageRes = R.drawable.thumbnail_2,
+                        certificationStatus = certificationStatus,
+                        onClick = {
+                            OkHttpClientInstance.deleteData { response, exception ->
+                                if (exception != null) {
+                                    // 요청 실패 처리
+                                    Log.d("test", "1")
+                                    exception.printStackTrace()
+                                } else if (response != null && response.isSuccessful) {
+                                    // DELETE 요청이 성공하면 VideoActivity로 이동
+                                    Log.d("test", "2")
+                                    context.startActivity(intent)
+                                } else {
+                                    Log.d("test", "3")
+                                    // 요청 실패 처리
+                                }
+                            }
+                        },
+                    )
+                    Spacer(modifier = Modifier.height(16.dp))
+                }
+                if (lectureMap["장애인인식개선"] == true) {
+                    VideoListItem(
+                        title = "장애인인식개선",
+                        imageRes = R.drawable.thumbnail_2,
+                        certificationStatus = certificationStatus,
+                        onClick = {
+                            OkHttpClientInstance.deleteData { response, exception ->
+                                if (exception != null) {
+                                    // 요청 실패 처리
+                                    Log.d("test", "1")
+                                    exception.printStackTrace()
+                                } else if (response != null && response.isSuccessful) {
+                                    // DELETE 요청이 성공하면 VideoActivity로 이동
+                                    Log.d("test", "2")
+                                    context.startActivity(intent)
+                                } else {
+                                    Log.d("test", "3")
+                                    // 요청 실패 처리
+                                }
+                            }
+                        },
+                    )
+                    Spacer(modifier = Modifier.height(16.dp))
+                }
+                if (lectureMap["직장내성희롱"] == true) {
+                    VideoListItem(
+                        title = "직장내성희롱",
+                        imageRes = R.drawable.thumbnail_1,
+                        certificationStatus = certificationStatus,
+                        onClick = {
+                            OkHttpClientInstance.deleteData { response, exception ->
+                                if (exception != null) {
+                                    // 요청 실패 처리
+                                    Log.d("test", "1")
+                                    exception.printStackTrace()
+                                } else if (response != null && response.isSuccessful) {
+                                    // DELETE 요청이 성공하면 VideoActivity로 이동
+                                    Log.d("test", "2")
+                                    context.startActivity(intent)
+                                } else {
+                                    Log.d("test", "3")
+                                    // 요청 실패 처리
+                                }
+                            }
+                        },
+                    )
+                    Spacer(modifier = Modifier.height(16.dp))
+                }
             }
         }
     }

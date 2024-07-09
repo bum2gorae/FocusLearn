@@ -187,32 +187,11 @@ fun LoginScreen(context: Context, sharedPreferences: SharedPreferences) {
 
             Spacer(modifier = Modifier.height(20.dp))
 
-            var companyCode = ""
+
             Button(
                 onClick = {
-                    var userName = ""
-                    var userID = ""
-                    val fireDB = Firebase.firestore
-                    fireDB.collection("Company").get()
-                        .addOnSuccessListener { companyDocs ->
-                            for (companyDoc in companyDocs) {
-                                val companyID = companyDoc.id
-
-                                fireDB.collection("Company").document(companyID)
-                                    .collection("Employee")
-                                    .whereEqualTo("ID", id).get().addOnSuccessListener { Docs ->
-                                        for (Doc in Docs) {
-                                            companyCode = companyID
-                                            userName = Doc.id
-                                            userID = Doc.get("ID").toString()
-                                        }
-                                    }
-                            }
-                        }
                     val intent = Intent(context, Conditions::class.java)
-                    intent.putExtra("CompanyCode", companyCode)
-                    intent.putExtra("userName", userName)
-                    intent.putExtra("userID", userID)
+                    intent.putExtra("userID", id)
                     context.startActivity(intent)
                 },
                 modifier = Modifier
