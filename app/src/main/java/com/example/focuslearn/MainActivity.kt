@@ -4,13 +4,13 @@ import android.Manifest
 import android.app.Activity
 import android.content.Context
 import android.content.Intent
+import android.content.SharedPreferences
 import android.content.pm.PackageManager
 import android.os.Bundle
 import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
-import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
@@ -47,6 +47,11 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.app.ActivityCompat
 import com.example.focuslearn.ui.theme.FocusLearnTheme
+import com.google.common.reflect.TypeToken
+import com.google.firebase.Firebase
+import com.google.firebase.firestore.firestore
+import com.google.gson.Gson
+import java.io.Serializable
 
 
 private fun checkCameraPermission(context: Context): Boolean {
@@ -67,6 +72,7 @@ class MainActivity : ComponentActivity() {
     init {
         System.loadLibrary("opencv_java4")
     }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
@@ -95,11 +101,11 @@ class MainActivity : ComponentActivity() {
                         cameraPermissionRequest.launch(Manifest.permission.CAMERA)
                     }
                 }
+                val sharedPreferences: SharedPreferences = getSharedPreferences("MyPrefs", Context.MODE_PRIVATE)
+
+
                 Surface(modifier = Modifier.fillMaxSize(), color = Color(0xFFF5F5F5)) {
-                    LoginScreen(onLoginClick = {
-                        val intent = Intent(this, Conditions::class.java)
-                        startActivity(intent)
-                    })
+                    LoginScreen(context, sharedPreferences)
                 }
             }
         }
@@ -109,12 +115,13 @@ class MainActivity : ComponentActivity() {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun LoginScreen(onLoginClick: () -> Unit) {
+fun LoginScreen(context: Context, sharedPreferences: SharedPreferences) {
     var id by remember { mutableStateOf("") }
     Box(
         modifier = Modifier
             .fillMaxSize()
     ) {
+
         Image(
             painter = painterResource(id = R.drawable.focuslearn_background),
             contentDescription = null,
@@ -164,6 +171,7 @@ fun LoginScreen(onLoginClick: () -> Unit) {
 
             Spacer(modifier = Modifier.height(20.dp))
 
+
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -179,8 +187,34 @@ fun LoginScreen(onLoginClick: () -> Unit) {
 
             Spacer(modifier = Modifier.height(20.dp))
 
+            var companyCode = ""
             Button(
-                onClick = onLoginClick,
+                onClick = {
+                    var userName = ""
+                    var userID = ""
+                    val fireDB = Firebase.firestore
+                    fireDB.collection("Company").get()
+                        .addOnSuccessListener { companyDocs ->
+                            for (companyDoc in companyDocs) {
+                                val companyID = companyDoc.id
+
+                                fireDB.collection("Company").document(companyID)
+                                    .collection("Employee")
+                                    .whereEqualTo("ID", id).get().addOnSuccessListener { Docs ->
+                                        for (Doc in Docs) {
+                                            companyCode = companyID
+                                            userName = Doc.id
+                                            userID = Doc.get("ID").toString()
+                                        }
+                                    }
+                            }
+                        }
+                    val intent = Intent(context, Conditions::class.java)
+                    intent.putExtra("CompanyCode", companyCode)
+                    intent.putExtra("userName", userName)
+                    intent.putExtra("userID", userID)
+                    context.startActivity(intent)
+                },
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 40.dp)
@@ -202,3 +236,4 @@ fun LoginScreen(onLoginClick: () -> Unit) {
         }
     }
 }
+

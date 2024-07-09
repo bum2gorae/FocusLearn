@@ -3,6 +3,7 @@ package com.example.focuslearn
 
 import android.content.Context
 import android.content.Intent
+import android.content.SharedPreferences
 import android.graphics.Bitmap
 import android.os.Bundle
 import android.util.Log
@@ -44,6 +45,7 @@ import androidx.media3.common.Player
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.ui.PlayerView
 import com.example.focuslearn.ui.theme.FocusLearnTheme
+import com.google.common.reflect.TypeToken
 import com.google.firebase.Firebase
 import com.google.firebase.firestore.firestore
 import com.google.gson.Gson
@@ -215,8 +217,8 @@ class MainViewModel : ViewModel() {
 }
 
 
-
 class VideoActivity : ComponentActivity() {
+
     private val viewModel: MainViewModel by viewModels()
 
     init {
@@ -227,10 +229,12 @@ class VideoActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
+            val context = LocalContext.current
             FocusLearnTheme {
                 LaunchedEffect(Unit) {
                     startCamera()
                 }
+                val fireDB = Firebase.firestore
                 val ID = "ss01"
                 val label = "직장내성희롱"
                 var concentrateNow by remember {
@@ -282,11 +286,6 @@ class VideoActivity : ComponentActivity() {
                 bitmap.value?.let {
                     DisplayImage(it)
                 }
-
-
-//
-
-
             }
         }
     }
@@ -364,8 +363,8 @@ fun VideoPlayer(
     val player = remember {
         ExoPlayer.Builder(context).build().apply {
             val mediaItem = MediaItem.fromUri(
-                "http://192.168.0.101:3700/uploads/Workplace_harassment_1.mp4"
-//                "http://192.168.45.55:3700/uploads/Workplace_harassment_1.mp4"
+//                "http://192.168.0.101:3700/uploads/Workplace_harassment_1.mp4"
+                "http://192.168.45.55:3700/uploads/Workplace_harassment_1.mp4"
 
             )
             setMediaItem(mediaItem)
@@ -403,7 +402,6 @@ fun VideoPlayer(
     )
 }
 
-
 @Composable
 fun DisplayImage(bitmap: Bitmap) {
     Box(modifier = Modifier.fillMaxSize()) {
@@ -415,7 +413,6 @@ fun DisplayImage(bitmap: Bitmap) {
     }
 }
 
-
 fun postDataToFlaskServer(json: String, viewModel: MainViewModel) {
     val client = OkHttpClient()
 
@@ -424,8 +421,8 @@ fun postDataToFlaskServer(json: String, viewModel: MainViewModel) {
 
     val request = Request.Builder()
         // Flask 서버의 엔드포인트 URL
-        .url("http://192.168.0.101:3700/test")
-//        .url("http://192.168.45.79:5000/test")
+//        .url("http://192.168.0.101:3700/test")
+        .url("http://192.168.45.55:3700/test")
         .post(requestBody)
         .build()
     Log.d("flask", "requestFinish")

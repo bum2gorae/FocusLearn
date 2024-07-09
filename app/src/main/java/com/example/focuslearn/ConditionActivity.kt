@@ -162,6 +162,9 @@ class Conditions : ComponentActivity() {
                     onClick = {
                         if (term1Checked && term2Checked && term3Checked) {
                             val intent = Intent(context, EducationVideoScreen::class.java)
+                            intent.putExtra("CompanyCode", intent.getStringExtra("CompanyCode"))
+                            intent.putExtra("userName", intent.getStringExtra("userName"))
+                            intent.putExtra("userID", intent.getStringExtra("userID"))
                             context.startActivity(intent)
                         } else {
                             showDialog = true

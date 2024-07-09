@@ -39,6 +39,8 @@ import androidx.compose.ui.unit.sp
 import com.example.focuslearn.questionset.Question
 import com.example.focuslearn.questionset.QuestionData
 import com.example.focuslearn.ui.theme.FocusLearnTheme
+import com.google.firebase.Firebase
+import com.google.firebase.firestore.firestore
 
 class Quiz : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -219,6 +221,10 @@ fun ResultScreen(score: Int, totalQuestions: Int) {
             text = "총 $totalQuestions 문제 중 $score 문제를 맞췄습니다.",
             fontSize = 20.sp
         )
+        val fireDB = Firebase.firestore
+        val userFireDoc = fireDB.collection("Company").document("#0001")
+            .collection("Employee").document("설경인")
+        userFireDoc.update("LectureStatus.직장내성희롱", result)
 
         Spacer(modifier = Modifier.height(24.dp))
 
