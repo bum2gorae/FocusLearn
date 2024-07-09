@@ -1,5 +1,6 @@
 package com.example.focuslearn
 
+import android.content.Context
 import android.content.Intent
 import android.os.Bundle
 import android.util.Log
@@ -44,9 +45,11 @@ class EducationVideoScreen : ComponentActivity() {
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun EducationVideoScreenContent() {
+    val context = LocalContext.current
+    val sharedPreferences = context.getSharedPreferences("FocusLearnPreference", Context.MODE_PRIVATE)
+    val certificationStatus = sharedPreferences.getString("certificationStatus", "미수료") ?: "미수료"
     var showDialog by remember { mutableStateOf(false) }
 
     if (showDialog) {
@@ -119,27 +122,27 @@ fun EducationVideoScreenContent() {
             Column(
                 modifier = Modifier.fillMaxWidth()
             ) {
-                val context = LocalContext.current
                 VideoListItem(
                     title = "안전 보건 교육 영상",
                     imageRes = R.drawable.thumbnail_1,
+                    certificationStatus = certificationStatus,
                     onClick = {
                         OkHttpClientInstance.deleteData { response, exception ->
                             if (exception != null) {
                                 // 요청 실패 처리
-                                Log.d("test","1")
+                                Log.d("test", "1")
                                 exception.printStackTrace()
                             } else if (response != null && response.isSuccessful) {
                                 // DELETE 요청이 성공하면 VideoActivity로 이동
-                                Log.d("test","2")
+                                Log.d("test", "2")
                                 val intent = Intent(context, PreVideoScreen::class.java)
                                 context.startActivity(intent)
                             } else {
-                                Log.d("test","3")
+                                Log.d("test", "3")
                                 // 요청 실패 처리
                             }
                         }
-                    }
+                    },
                 )
 //                Spacer(modifier = Modifier.height(16.dp))
 //                VideoListItem(
@@ -156,13 +159,15 @@ fun EducationVideoScreenContent() {
 }
 
 @Composable
-fun VideoListItem(title: String, imageRes: Int, onClick: () -> Unit) {
+fun VideoListItem(title: String, imageRes: Int, certificationStatus: String, onClick: () -> Unit) {
+    val isButtonEnabled = certificationStatus != "수료"
+
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .background(Color.White, RoundedCornerShape(8.dp))
             .padding(16.dp)
-            .clickable(onClick = onClick)
+            .clickable(onClick = onClick, enabled = isButtonEnabled)
     ) {
         Image(
             painter = painterResource(id = imageRes),
@@ -178,6 +183,17 @@ fun VideoListItem(title: String, imageRes: Int, onClick: () -> Unit) {
             color = Color.Black,
             modifier = Modifier.align(Alignment.CenterVertically)
         )
+        Spacer(modifier = Modifier.width(16.dp))
+        Text(
+            text = certificationStatus,
+            fontSize = 12.sp,
+            color = when (certificationStatus) {
+                "수료" -> Color(0xFF1F41BB) // Blue color for "수료"
+                "미수료" -> Color.Red // Red color for "미수료"
+                else -> Color.Black // Default color
+            },
+            modifier = Modifier.align(Alignment.CenterVertically)
+        )
     }
 }
 
@@ -186,16 +202,22 @@ object OkHttpClientInstance {
 
     fun deleteData(callback: (Response?, IOException?) -> Unit) {
         val request = Request.Builder()
-            .url("http://192.168.0.101:3700/test") // Flask 서버 주소와 포트로 변경
+            .url("http://192.168.45.197:8080/test") // Flask 서버 주소와 포트로 변경
             .delete()
             .build()
 
         client.newCall(request).enqueue(object : okhttp3.Callback {
             override fun onFailure(call: okhttp3.Call, e: IOException) {
+                Log.e("OkHttpClientInstance", "DELETE request failed", e)
                 callback(null, e)
             }
 
             override fun onResponse(call: okhttp3.Call, response: Response) {
+                if (response.isSuccessful) {
+                    Log.d("OkHttpClientInstance", "DELETE request successful")
+                } else {
+                    Log.e("OkHttpClientInstance", "DELETE request failed: ${response.code}")
+                }
                 callback(response, null)
             }
         })
