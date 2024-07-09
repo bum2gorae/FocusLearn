@@ -73,7 +73,8 @@ fun VideoScreenContent(
         Image(
             painter = painterResource(id = R.drawable.focuslearn_background),
             contentDescription = null,
-            modifier = Modifier.fillMaxSize()
+            modifier = Modifier.fillMaxSize(),
+            contentScale = ContentScale.Crop
         )
         Column(
             modifier = Modifier
