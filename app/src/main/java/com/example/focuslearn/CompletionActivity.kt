@@ -69,7 +69,8 @@ class CompletionScreen : ComponentActivity() {
                         completionDate = "2024-07-10",
                         progressRate = "100%",
                         concentrationRate = "${totConcentrateAvg.toInt()}%",
-                        certificationStatus = certificationStatus
+                        certificationStatus = certificationStatus,
+                        intent
                     )
                 }
             }
@@ -86,9 +87,13 @@ fun CompletionScreenContent(
     completionDate: String,
     progressRate: String,
     concentrationRate: String,
-    certificationStatus: String
+    certificationStatus: String,
+    intent1: Intent
 ) {
     val context = LocalContext.current
+    val userID = intent1.getStringExtra("userID")
+    val companyCode = intent1.getStringExtra("companyCode")
+    val userName = intent1.getStringExtra("userName")
 
     Box(
         modifier = Modifier
@@ -163,6 +168,9 @@ fun CompletionScreenContent(
             )  {
                 Button(onClick = {
                     val intent = Intent(context, EducationVideoScreen::class.java)
+                    intent.putExtra("userID", userID)
+                    intent.putExtra("companyCode", companyCode)
+                    intent.putExtra("userName", userName)
                     context.startActivity(intent)
                 }) {
                     Text(text = "홈으로")
@@ -216,15 +224,3 @@ fun InfoBox(label: String, value: String) {
     }
 }
 
-@Preview(showBackground = true)
-@Composable
-fun CompletionScreenPreview() {
-    FocusLearnTheme {
-        CompletionScreenContent(
-            completionDate = "2024-07-10",
-            progressRate = "100%",
-            concentrationRate = "88%",
-            certificationStatus = "수료"
-        )
-    }
-}

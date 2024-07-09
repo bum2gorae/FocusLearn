@@ -60,7 +60,36 @@ class EducationVideoScreen : ComponentActivity() {
         setContent {
             FocusLearnTheme {
                 Surface(modifier = Modifier.fillMaxSize(), color = Color(0xFFF5F5F5)) {
-                    EducationVideoScreenContent(intent)
+                    var refreshTrigger by remember { mutableStateOf(false) }
+                    val userID = intent.getStringExtra("userID")
+                    val companyCode = intent.getStringExtra("companyCode")
+                    val userName = intent.getStringExtra("userName")
+                    val lectureCodeMutable = remember { mutableListOf<Boolean>() }
+                    val lectureStatusMutable = remember { mutableListOf<Boolean>() }
+
+                    val fireDB = Firebase.firestore
+                    fireDB.collection("Company").document(companyCode.toString())
+                        .collection("Employee")
+                        .document(userName.toString()).get().addOnSuccessListener { Docs ->
+                            val lectureCodeMap = Docs["LectureCode"] as Map<String?, Boolean?>
+                            val lectureStatusMap = Docs["LectureStatus"] as Map<String?, Boolean?>
+                            for (i in 0..3) {
+                                lectureCodeMutable.add(lectureCodeMap[lectureList[i]] as Boolean)
+                            }
+                            for (i in 0..3) {
+                                lectureStatusMutable.add(lectureStatusMap[lectureList[i]] as Boolean)
+                            }
+                            refreshTrigger = true
+                        }
+                    if (refreshTrigger) {
+                        EducationVideoScreenContent(
+                            userID.toString(),
+                            companyCode.toString(),
+                            userName.toString(),
+                            lectureCodeMutable,
+                            lectureStatusMutable
+                        )
+                    }
                 }
             }
         }
@@ -69,7 +98,11 @@ class EducationVideoScreen : ComponentActivity() {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun EducationVideoScreenContent(intent1: Intent) {
+fun EducationVideoScreenContent(userID : String,
+                                companyCode : String,
+                                userName : String,
+                                lectureCodeMutable : MutableList<Boolean>,
+                                lectureStatusMutable : MutableList<Boolean>) {
     val context = LocalContext.current
     var showDialog by remember { mutableStateOf(false) }
 
@@ -94,14 +127,6 @@ fun EducationVideoScreenContent(intent1: Intent) {
         modifier = Modifier
             .fillMaxSize()
     ) {
-        val userID = intent1.getStringExtra("userID")
-        val companyCode = intent1.getStringExtra("companyCode")
-        val userName = intent1.getStringExtra("userName")
-        val lectureCode = intent1.getBooleanArrayExtra("lectureCode")
-        val lectureStatus = intent1.getBooleanArrayExtra("lectureStatus")
-
-
-
 
         Image(
             painter = painterResource(id = R.drawable.focuslearn_background),
@@ -160,16 +185,14 @@ fun EducationVideoScreenContent(intent1: Intent) {
                 intent.putExtra("userID", userID)
                 intent.putExtra("companyCode", companyCode)
                 intent.putExtra("userName", userName)
-                intent.putExtra("lectureCode", lectureCode)
-                intent.putExtra("lectureStatus", lectureStatus)
-                Log.d("companyCode", companyCode.toString())
+                Log.d("size", lectureCodeMutable.size.toString())
 
 
-                if (lectureStatus?.get(0) == true) {
+                if (lectureStatusMutable.size>0 && lectureCodeMutable[0]) {
                     VideoListItem(
                         title = "개인정보보호",
                         imageRes = R.drawable.thumbnail_1,
-                        certificationStatus = lectureStatus.get(0),
+                        certificationStatus = lectureStatusMutable[0],
                         onClick = {
                             OkHttpClientInstance.deleteData { response, exception ->
                                 if (exception != null) {
@@ -189,11 +212,11 @@ fun EducationVideoScreenContent(intent1: Intent) {
                     )
                     Spacer(modifier = Modifier.height(16.dp))
                 }
-                if (lectureStatus?.get(1) == true) {
+                if (lectureStatusMutable.size>0 && lectureCodeMutable[1]) {
                     VideoListItem(
                         title = "산업안전법",
                         imageRes = R.drawable.thumbnail_2,
-                        certificationStatus = lectureStatus.get(1),
+                        certificationStatus = lectureStatusMutable[1],
                         onClick = {
                             OkHttpClientInstance.deleteData { response, exception ->
                                 if (exception != null) {
@@ -213,11 +236,11 @@ fun EducationVideoScreenContent(intent1: Intent) {
                     )
                     Spacer(modifier = Modifier.height(16.dp))
                 }
-                if (lectureStatus?.get(2) == true) {
+                if (lectureStatusMutable.size>0 && lectureCodeMutable[2]) {
                     VideoListItem(
                         title = "장애인인식개선",
                         imageRes = R.drawable.thumbnail_2,
-                        certificationStatus = lectureStatus.get(2),
+                        certificationStatus = lectureStatusMutable[2],
                         onClick = {
                             OkHttpClientInstance.deleteData { response, exception ->
                                 if (exception != null) {
@@ -237,11 +260,11 @@ fun EducationVideoScreenContent(intent1: Intent) {
                     )
                     Spacer(modifier = Modifier.height(16.dp))
                 }
-                if (lectureStatus?.get(3) == true) {
+                if (lectureStatusMutable.size>0 && lectureCodeMutable[3]) {
                     VideoListItem(
                         title = "직장내성희롱",
                         imageRes = R.drawable.thumbnail_1,
-                        certificationStatus = lectureStatus.get(3),
+                        certificationStatus = lectureStatusMutable[3],
                         onClick = {
                             OkHttpClientInstance.deleteData { response, exception ->
                                 if (exception != null) {
@@ -251,6 +274,7 @@ fun EducationVideoScreenContent(intent1: Intent) {
                                 } else if (response != null && response.isSuccessful) {
                                     // DELETE 요청이 성공하면 VideoActivity로 이동
                                     Log.d("test", "2")
+                                    intent.putExtra("lectureName", "직장내성희롱")
                                     context.startActivity(intent)
                                 } else {
                                     Log.d("test", "3")

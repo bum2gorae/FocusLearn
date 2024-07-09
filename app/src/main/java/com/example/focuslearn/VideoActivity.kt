@@ -3,7 +3,6 @@ package com.example.focuslearn
 
 import android.content.Context
 import android.content.Intent
-import android.content.SharedPreferences
 import android.graphics.Bitmap
 import android.os.Bundle
 import android.util.Log
@@ -45,7 +44,6 @@ import androidx.media3.common.Player
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.ui.PlayerView
 import com.example.focuslearn.ui.theme.FocusLearnTheme
-import com.google.common.reflect.TypeToken
 import com.google.firebase.Firebase
 import com.google.firebase.firestore.firestore
 import com.google.gson.Gson
@@ -82,7 +80,7 @@ class MainViewModel : ViewModel() {
         }
     }
 
-    fun processImageProxy(imageProxy: ImageProxy) {
+    fun processImageProxy(imageProxy: ImageProxy, userID: String, lectureName: String, companyCode: String) {
         Log.d("ImageAnalysis", "Processing image")
         val gson = Gson()
 
@@ -94,7 +92,7 @@ class MainViewModel : ViewModel() {
                 }
                 val bgrBytes = imageToIntArray(imageProxy)
                 val jsonString = gson.toJson(bgrBytes)
-                postDataToFlaskServer(jsonString, this@MainViewModel)
+                postDataToFlaskServer(jsonString, this@MainViewModel, userID, lectureName, companyCode)
             } catch (e: Exception) {
                 Log.e("ImageAnalysis", "Error processing image", e)
             } finally {
@@ -108,10 +106,10 @@ class MainViewModel : ViewModel() {
         isPaused = true
     }
 
-    fun resumeProcessing() {
+    fun resumeProcessing(userID: String, lectureName: String, companyCode: String) {
         isPaused = false
         currentImageProxy?.let {
-            processImageProxy(it)
+            processImageProxy(it, userID, lectureName, companyCode)
         }
     }
 
@@ -133,27 +131,29 @@ class MainViewModel : ViewModel() {
 
     fun saveDataToFirestore(
         id: String,
+        companyCode : String,
         requestId: Int,
         result: Any?,
-        concentrateNow: Int,
         label: String
     ) {
         val safeResult = result ?: 0 // result가 null이면 0으로 설정
 
-        val data = hashMapOf(
-            "result" to safeResult,
-            "concentrateNow" to concentrateNow
-        )
+
 
         firestore.collection("Company")
-            .document("#0001")
+            .document(companyCode)
             .collection("Employee")
             .whereEqualTo("ID", id)
             .get()
             .addOnSuccessListener { documents ->
+                val concentrateNow = (calculateAverageOfLastTenValues()*100).toInt()
+                val data = hashMapOf(
+                    "result" to safeResult,
+                    "concentrateNow" to concentrateNow
+                )
                 for (document in documents) {
                     firestore.collection("Company")
-                        .document("#0001")
+                        .document(companyCode)
                         .collection("Employee")
                         .document(document.id)
                         .collection(label)
@@ -172,9 +172,9 @@ class MainViewModel : ViewModel() {
             }
     }
 
-    fun fetchResultsFromFirestore(id: String, label: String, onComplete: (Double) -> Unit) {
+    fun fetchResultsFromFirestore(id: String, label: String, companyCode: String,onComplete: (Double) -> Unit) {
         firestore.collection("Company")
-            .document("#0001")
+            .document(companyCode)
             .collection("Employee")
             .whereEqualTo("ID", id)
             .get()
@@ -185,7 +185,7 @@ class MainViewModel : ViewModel() {
                 for (document in documents) {
                     val employeeDocId = document.id
                     firestore.collection("Company")
-                        .document("#0001")
+                        .document(companyCode)
                         .collection("Employee")
                         .document(employeeDocId)
                         .collection(label)
@@ -219,7 +219,13 @@ class MainViewModel : ViewModel() {
 
 class VideoActivity : ComponentActivity() {
 
+
     private val viewModel: MainViewModel by viewModels()
+
+    private lateinit var userID: String
+    private lateinit var companyCode: String
+    private lateinit var userName: String
+    private lateinit var lectureName: String
 
     init {
         System.loadLibrary("opencv_java4")
@@ -227,16 +233,18 @@ class VideoActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        userID = intent.getStringExtra("userID").toString()
+        companyCode = intent.getStringExtra("companyCode").toString()
+        userName = intent.getStringExtra("userName").toString()
+        lectureName = intent.getStringExtra("lectureName").toString()
         enableEdgeToEdge()
         setContent {
-            val context = LocalContext.current
+
             FocusLearnTheme {
                 LaunchedEffect(Unit) {
-                    startCamera()
+                    startCamera(userID, lectureName, companyCode)
                 }
-                val fireDB = Firebase.firestore
-                val ID = "ss01"
-                val label = "직장내성희롱"
+
                 var concentrateNow by remember {
                     mutableIntStateOf(0)
                 }
@@ -252,6 +260,10 @@ class VideoActivity : ComponentActivity() {
                 VideoPlayer(onPlaybackEnded = {
                     // 재생이 끝나면 MainActivity로 이동
                     val intent = Intent(this@VideoActivity, TestStartScreen::class.java)
+                    intent.putExtra("userID", userID)
+                    intent.putExtra("companyCode", companyCode)
+                    intent.putExtra("userName", userName)
+                    intent.putExtra("lectureName", lectureName)
                     startActivity(intent)
                     finish()
                 },
@@ -259,7 +271,7 @@ class VideoActivity : ComponentActivity() {
                         viewModel.pauseProcessing()
                     },
                     onPlaybackResumed = {
-                        viewModel.resumeProcessing()
+                        viewModel.resumeProcessing(userID, lectureName, companyCode)
                     })
                 Box(
                     modifier = Modifier
@@ -290,7 +302,9 @@ class VideoActivity : ComponentActivity() {
         }
     }
 
-    private fun startCamera() {
+    private fun startCamera(userID : String,
+                            lectureName: String,
+                            companyCode: String) {
         Log.d("CameraX", "Starting camera")
         val cameraProviderFuture = ProcessCameraProvider.getInstance(this)
 
@@ -302,7 +316,7 @@ class VideoActivity : ComponentActivity() {
                 .build()
                 .also {
                     it.setAnalyzer(ContextCompat.getMainExecutor(this)) { imageProxy ->
-                        viewModel.processImageProxy(imageProxy)
+                        viewModel.processImageProxy(imageProxy, userID, lectureName, companyCode)
                     }
                 }
 
@@ -326,7 +340,7 @@ class VideoActivity : ComponentActivity() {
         val sharedPreferences = getSharedPreferences("FocusLearnPreference", Context.MODE_PRIVATE)
         val editor = sharedPreferences.edit()
 
-        viewModel.fetchResultsFromFirestore("ss01", "직장내성희롱") { totalAvg ->
+        viewModel.fetchResultsFromFirestore(userID, lectureName, companyCode) { totalAvg ->
             editor.putFloat("totalAvg", totalAvg.toFloat())
             editor.apply()
             Log.d("SharedPreferences", "totalAvg saved: $totalAvg")
@@ -413,7 +427,7 @@ fun DisplayImage(bitmap: Bitmap) {
     }
 }
 
-fun postDataToFlaskServer(json: String, viewModel: MainViewModel) {
+fun postDataToFlaskServer(json: String, viewModel: MainViewModel, userID : String, lectureName : String, companyCode: String ) {
     val client = OkHttpClient()
 
     val mediaType = "application/json; charset=utf-8".toMediaTypeOrNull()
@@ -440,15 +454,13 @@ fun postDataToFlaskServer(json: String, viewModel: MainViewModel) {
                     viewModel.responseLiveData.postValue("Request ID: ${serverResponse.request_id}, Data: ${serverResponse.result}")
 
                     // Firestore에 데이터 저장
-                    val id = "ss01"  // ID는 예시로 사용된 값, 실제 값으로 변경 필요
-                    val label = "직장내성희롱"
-                    val concentrateNow = viewModel.calculateAverageOfLastTenValues().toInt()
+
                     viewModel.saveDataToFirestore(
-                        id,
+                        userID,
+                        companyCode,
                         serverResponse.request_id,
                         serverResponse.result,
-                        concentrateNow,
-                        label
+                        lectureName
                     )
                 }
             }

@@ -47,19 +47,20 @@ class Quiz : ComponentActivity() {
         super.onCreate(savedInstanceState)
         setContent {
             FocusLearnTheme {
-                AppContent()
+                AppContent(intent)
             }
         }
     }
 }
 
 @Composable
-fun AppContent() {
+fun AppContent(intent: Intent) {
     var showResult by remember { mutableStateOf(false) }
     var score by remember { mutableStateOf(0) }
 
     if (showResult) {
-        ResultScreen(score = score, totalQuestions = QuestionData.getQuestions().size)
+        ResultScreen(score = score, totalQuestions = QuestionData.getQuestions().size,
+            intent)
     } else {
         QuizScreen(
             questions = QuestionData.getQuestions(),
@@ -74,7 +75,7 @@ fun AppContent() {
 @Composable
 fun QuizScreen(
     questions: List<Question>,
-    onQuizCompleted: (Int) -> Unit
+    onQuizCompleted: (Int) -> Unit,
 ) {
     var currentPosition by remember { mutableStateOf(0) }
     var selectedOption by remember { mutableStateOf(0) }
@@ -84,6 +85,7 @@ fun QuizScreen(
     val currentQuestion = questions[currentPosition]
     val context = LocalContext.current
     val scrollState = rememberScrollState()
+
 
     Column(
         modifier = Modifier
@@ -192,8 +194,13 @@ fun OptionItem(option: String, isSelected: Boolean, onClick: () -> Unit) {
 }
 
 @Composable
-fun ResultScreen(score: Int, totalQuestions: Int) {
+fun ResultScreen(score: Int, totalQuestions: Int,
+                 intent1: Intent) {
     val context = LocalContext.current
+    val userID = intent1.getStringExtra("userID")
+    val companyCode = intent1.getStringExtra("companyCode")
+    val userName = intent1.getStringExtra("userName")
+    val lectureName = intent1.getStringExtra("lectureName")
     val sharedPreferences = context.getSharedPreferences("FocusLearnPreference", Context.MODE_PRIVATE)
     val totConcentrateAvg =  sharedPreferences.getFloat("totalAvg", 0.00f)*100
     var result by remember {
@@ -222,14 +229,18 @@ fun ResultScreen(score: Int, totalQuestions: Int) {
             fontSize = 20.sp
         )
         val fireDB = Firebase.firestore
-        val userFireDoc = fireDB.collection("Company").document("#0001")
-            .collection("Employee").document("설경인")
-        userFireDoc.update("LectureStatus.직장내성희롱", result)
+        val userFireDoc = fireDB.collection("Company").document(companyCode.toString())
+            .collection("Employee").document(userName.toString())
+        userFireDoc.update("LectureStatus.$lectureName", result)
 
         Spacer(modifier = Modifier.height(24.dp))
 
         Button(onClick = {
             val intent = Intent(context, CompletionScreen::class.java)
+            intent.putExtra("userID", userID)
+            intent.putExtra("companyCode", companyCode)
+            intent.putExtra("userName", userName)
+            intent.putExtra("lectureName", lectureName)
             intent.putExtra("result", result)
             context.startActivity(intent)
         }) {

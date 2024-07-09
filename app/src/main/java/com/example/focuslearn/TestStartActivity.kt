@@ -30,7 +30,7 @@ class TestStartScreen : ComponentActivity() {
         setContent {
             FocusLearnTheme {
                 Surface(modifier = Modifier.fillMaxSize(), color = Color(0xFFF5F5F5)) {
-                    TestStartScreenContent()
+                    TestStartScreenContent(intent)
                 }
             }
         }
@@ -39,8 +39,12 @@ class TestStartScreen : ComponentActivity() {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun TestStartScreenContent() {
+fun TestStartScreenContent(intent1: Intent) {
     val context = LocalContext.current
+    val userID = intent1.getStringExtra("userID")
+    val companyCode = intent1.getStringExtra("companyCode")
+    val userName = intent1.getStringExtra("userName")
+    val lectureName = intent1.getStringExtra("lectureName")
 
     Box(
         modifier = Modifier
@@ -105,6 +109,10 @@ fun TestStartScreenContent() {
             Button(
                 onClick = {
                     val intent = Intent(context, Quiz::class.java)
+                    intent.putExtra("userID", userID)
+                    intent.putExtra("companyCode", companyCode)
+                    intent.putExtra("userName", userName)
+                    intent.putExtra("lectureName", lectureName)
                     context.startActivity(intent)
                 },
                 modifier = Modifier
@@ -122,13 +130,5 @@ fun TestStartScreenContent() {
                 )
             }
         }
-    }
-}
-
-@Preview(showBackground = true)
-@Composable
-fun TestStartScreenPreview() {
-    FocusLearnTheme {
-        TestStartScreenContent()
     }
 }

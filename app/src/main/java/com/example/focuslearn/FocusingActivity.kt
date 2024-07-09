@@ -41,8 +41,7 @@ fun EyeRecognitionContent(intent1: Intent) {
     val userID = intent1.getStringExtra("userID")
     val companyCode = intent1.getStringExtra("companyCode")
     val userName = intent1.getStringExtra("userName")
-    val lectureCode = intent1.getBooleanArrayExtra("lectureCode")
-    val lectureStatus = intent1.getBooleanArrayExtra("lectureStatus")
+    val lectureName = intent1.getStringExtra("lectureName")
 
     LaunchedEffect(Unit) {
         while (true) {
@@ -54,8 +53,7 @@ fun EyeRecognitionContent(intent1: Intent) {
                     intent.putExtra("userID", userID)
                     intent.putExtra("companyCode", companyCode)
                     intent.putExtra("userName", userName)
-                    intent.putExtra("lectureCode", lectureCode)
-                    intent.putExtra("lectureStatus", lectureStatus)
+                    intent.putExtra("lectureName", lectureName)
                     context.startActivity(intent)
                     break
                 }
